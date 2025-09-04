@@ -1,6 +1,6 @@
-# 🚀 kaf - The kubectl for Kafka
+# 🚀 kaf - A Unified CLI for Kafka
 
-A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a kubectl-inspired interface. Replace complex native `kafka-*` shell scripts with intuitive, short commands.
+A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a **kubectl-like design philosophy**. Replace complex native `kafka-*` shell scripts with intuitive, short commands.
 
 ## 🎯 Features
 
@@ -19,8 +19,9 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
 
 ```bash
 # Clone and build
-git clone <repository-url>
+git clone git@github.com:KLogicHQ/kaf.git
 cd kaf
+go mod tidy
 go build -o kaf .
 
 # Make it globally available (optional)
@@ -165,7 +166,7 @@ current-context: dev
 clusters:
   dev:
     bootstrap: localhost:9092
-    
+
   staging:
     bootstrap: kafka-staging:9092
     security:
@@ -173,7 +174,7 @@ clusters:
         mechanism: PLAIN
         username: stage-user
         password: stage-pass
-        
+
   prod:
     bootstrap: kafka-prod:9092
     security:

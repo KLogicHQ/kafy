@@ -1,6 +1,8 @@
 module kaf
 
-go 1.19
+go 1.21
+
+toolchain go1.24.5
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1

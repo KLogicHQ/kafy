@@ -1,0 +1,19 @@
+# Binaries
+/bin/
+/build/
+
+# Editor/IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
