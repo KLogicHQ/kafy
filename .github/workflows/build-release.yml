@@ -7,33 +7,72 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, darwin, windows]
-        arch: [amd64, arm64]
-        exclude:
-          - os: windows
-            arch: arm64
+        include:
+          # Linux builds
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            name: kaf-linux-amd64
+          - os: ubuntu-latest  
+            goos: linux
+            goarch: arm64
+            name: kaf-linux-arm64
+          # macOS builds
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            name: kaf-macos-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            name: kaf-macos-arm64
+          # Windows builds
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            name: kaf-windows-amd64.exe
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
+      
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.19'
+          
+      - name: Install librdkafka (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librdkafka-dev
+          
+      - name: Install librdkafka (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install librdkafka
+          
+      - name: Install librdkafka (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # For Windows, we'll use the bundled librdkafka
+          echo "Using bundled librdkafka for Windows"
+          
       - name: Build
+        env:
+          CGO_ENABLED: 1
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
           mkdir -p release
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o release/kaf-${{ matrix.os }}-${{ matrix.arch }}.exe .
-          else
-            GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o release/kaf-${{ matrix.os }}-${{ matrix.arch }} .
-          fi
+          go build -o release/${{ matrix.name }} .
+          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: kaf-${{ matrix.os }}-${{ matrix.arch }}
-          path: release/
+          name: ${{ matrix.name }}
+          path: release/${{ matrix.name }}
 
   release:
     needs: build
