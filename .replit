@@ -1,2 +1,26 @@
+modules = ["go"]
 [agent]
 expertMode = true
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "kafka-cli"
+
+[[workflows.workflow]]
+name = "kafka-cli"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "go run . --help"
+
+[workflows.workflow.metadata]
+outputType = "console"
