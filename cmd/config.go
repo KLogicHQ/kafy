@@ -2,8 +2,10 @@ package cmd
 
 import (
         "fmt"
+        "os"
 
         "github.com/spf13/cobra"
+        "gopkg.in/yaml.v3"
         "kaf/config"
 )
 
@@ -239,7 +241,40 @@ var configImportCmd = &cobra.Command{
         Short: "Import config from YAML/JSON",
         Args:  cobra.ExactArgs(1),
         RunE: func(cmd *cobra.Command, args []string) error {
-                return fmt.Errorf("import command not yet implemented")
+                filePath := args[0]
+                
+                data, err := os.ReadFile(filePath)
+                if err != nil {
+                        return fmt.Errorf("failed to read file: %w", err)
+                }
+
+                var importedConfig config.Config
+                if err := yaml.Unmarshal(data, &importedConfig); err != nil {
+                        return fmt.Errorf("failed to parse config file: %w", err)
+                }
+
+                // Load existing config
+                existingConfig, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                // Merge configs (imported clusters will overwrite existing ones)
+                for name, cluster := range importedConfig.Clusters {
+                        existingConfig.Clusters[name] = cluster
+                }
+
+                // Update current context if it was set in imported config
+                if importedConfig.CurrentContext != "" {
+                        existingConfig.CurrentContext = importedConfig.CurrentContext
+                }
+
+                if err := existingConfig.Save(); err != nil {
+                        return err
+                }
+
+                fmt.Printf("Successfully imported configuration from %s\n", filePath)
+                return nil
         },
 }
 
