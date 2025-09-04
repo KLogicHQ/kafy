@@ -2,6 +2,7 @@ package cmd
 
 import (
         "fmt"
+        "strconv"
         "strings"
 
         "github.com/spf13/cobra"
@@ -70,6 +71,27 @@ var groupsDescribeCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
+                if formatter.Format == "table" {
+                        headers := []string{"Property", "Value"}
+                        rows := [][]string{
+                                {"Group ID", groupInfo.GroupID},
+                                {"State", groupInfo.State},
+                                {"Members", strconv.Itoa(len(groupInfo.Members))},
+                        }
+                        
+                        if len(groupInfo.Members) > 0 {
+                                rows = append(rows, []string{"Member Details", ""})
+                                for i, member := range groupInfo.Members {
+                                        rows = append(rows, []string{fmt.Sprintf("  Member %d ID", i+1), member.MemberID})
+                                        rows = append(rows, []string{fmt.Sprintf("  Member %d Client", i+1), member.ClientID})
+                                        rows = append(rows, []string{fmt.Sprintf("  Member %d Host", i+1), member.Host})
+                                }
+                        }
+                        
+                        formatter.OutputTable(headers, rows)
+                        return nil
+                }
+                
                 return formatter.Output(groupInfo)
         },
 }
@@ -99,6 +121,24 @@ var groupsLagCmd = &cobra.Command{
                 formatter := getFormatter()
                 if len(lag) == 0 {
                         fmt.Printf("No lag data available for group '%s'\n", groupID)
+                        return nil
+                }
+                
+                if formatter.Format == "table" {
+                        headers := []string{"Topic", "Partition", "Lag"}
+                        var rows [][]string
+                        
+                        for topic, partitions := range lag {
+                                for partition, lagValue := range partitions {
+                                        rows = append(rows, []string{
+                                                topic,
+                                                strconv.Itoa(int(partition)),
+                                                strconv.Itoa(int(lagValue)),
+                                        })
+                                }
+                        }
+                        
+                        formatter.OutputTable(headers, rows)
                         return nil
                 }
                 

@@ -75,6 +75,26 @@ var topicsDescribeCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
+                if formatter.Format == "table" {
+                        headers := []string{"Property", "Value"}
+                        rows := [][]string{
+                                {"Name", topic.Name},
+                                {"Partitions", strconv.Itoa(topic.Partitions)},
+                                {"Replicas", strconv.Itoa(topic.Replicas)},
+                        }
+                        
+                        // Add config entries if any
+                        if len(topic.Config) > 0 {
+                                rows = append(rows, []string{"Configs", ""})
+                                for key, value := range topic.Config {
+                                        rows = append(rows, []string{"  " + key, value})
+                                }
+                        }
+                        
+                        formatter.OutputTable(headers, rows)
+                        return nil
+                }
+                
                 return formatter.Output(topic)
         },
 }

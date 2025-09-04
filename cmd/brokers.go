@@ -79,6 +79,17 @@ var brokersDescribeCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
+                if formatter.Format == "table" {
+                        headers := []string{"Property", "Value"}
+                        rows := [][]string{
+                                {"ID", strconv.Itoa(int(broker.ID))},
+                                {"Host", broker.Host},
+                                {"Port", strconv.Itoa(int(broker.Port))},
+                        }
+                        formatter.OutputTable(headers, rows)
+                        return nil
+                }
+                
                 return formatter.Output(broker)
         },
 }
