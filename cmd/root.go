@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"kaf/internal/output"
+
+	"github.com/spf13/cobra"
 )
 
 var (
 	outputFormat string
 	rootCmd      = &cobra.Command{
 		Use:   "kaf",
-		Short: "Kafka Productivity CLI - The kubectl for Kafka",
+		Short: "Kafka Productivity CLI - A Unified CLI for Kafka",
 		Long: `kaf is a comprehensive CLI tool for managing Kafka clusters.
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.`,
@@ -26,7 +27,7 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
-	
+
 	// Add subcommands
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(topicsCmd)
