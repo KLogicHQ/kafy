@@ -2,6 +2,8 @@
 /kaf
 /bin/
 /build/
+/release/
+kaf-*
 
 # Editor/IDE files
 .idea/
