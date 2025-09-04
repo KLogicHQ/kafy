@@ -3,6 +3,7 @@ package cmd
 import (
         "fmt"
         "strconv"
+        "strings"
 
         "github.com/spf13/cobra"
         "kaf/config"
@@ -96,8 +97,125 @@ var brokersMetricsCmd = &cobra.Command{
         },
 }
 
+// Broker config commands
+var brokersConfigsCmd = &cobra.Command{
+        Use:   "configs",
+        Short: "Manage broker configurations",
+        Long:  "Commands for managing broker-level configurations",
+}
+
+var brokersConfigsListCmd = &cobra.Command{
+        Use:   "list",
+        Short: "List all broker configs",
+        RunE: func(cmd *cobra.Command, args []string) error {
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                brokerConfigs, err := client.ListBrokerConfigs()
+                if err != nil {
+                        return err
+                }
+
+                formatter := getFormatter()
+                headers := []string{"Broker ID", "Config Key", "Value"}
+                var rows [][]string
+
+                for brokerID, configs := range brokerConfigs {
+                        for key, value := range configs {
+                                rows = append(rows, []string{brokerID, key, value})
+                        }
+                }
+
+                formatter.OutputTable(headers, rows)
+                return nil
+        },
+}
+
+var brokersConfigsGetCmd = &cobra.Command{
+        Use:   "get <broker-id>",
+        Short: "Show config for broker",
+        Args:  cobra.ExactArgs(1),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                brokerID := args[0]
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                configs, err := client.GetBrokerConfig(brokerID)
+                if err != nil {
+                        return err
+                }
+
+                formatter := getFormatter()
+                headers := []string{"Config Key", "Value"}
+                var rows [][]string
+
+                for key, value := range configs {
+                        rows = append(rows, []string{key, value})
+                }
+
+                formatter.OutputTable(headers, rows)
+                return nil
+        },
+}
+
+var brokersConfigsSetCmd = &cobra.Command{
+        Use:   "set <broker-id> <key>=<value>",
+        Short: "Update broker config",
+        Args:  cobra.ExactArgs(2),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                brokerID := args[0]
+                configPair := args[1]
+                
+                parts := strings.SplitN(configPair, "=", 2)
+                if len(parts) != 2 {
+                        return fmt.Errorf("config must be in format key=value")
+                }
+                
+                key := parts[0]
+                value := parts[1]
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                if err := client.SetBrokerConfig(brokerID, key, value); err != nil {
+                        return err
+                }
+
+                fmt.Printf("Broker '%s' config '%s' set to '%s'\n", brokerID, key, value)
+                return nil
+        },
+}
+
 func init() {
         brokersCmd.AddCommand(brokersListCmd)
         brokersCmd.AddCommand(brokersDescribeCmd)
         brokersCmd.AddCommand(brokersMetricsCmd)
+        brokersCmd.AddCommand(brokersConfigsCmd)
+
+        // Add config subcommands
+        brokersConfigsCmd.AddCommand(brokersConfigsListCmd)
+        brokersConfigsCmd.AddCommand(brokersConfigsGetCmd)
+        brokersConfigsCmd.AddCommand(brokersConfigsSetCmd)
 }

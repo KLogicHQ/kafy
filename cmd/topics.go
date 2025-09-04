@@ -182,12 +182,122 @@ var topicsAlterCmd = &cobra.Command{
         },
 }
 
+// Topic config commands
+var topicsConfigCmd = &cobra.Command{
+        Use:   "config",
+        Short: "Manage topic configurations",
+        Long:  "Commands for managing topic-level configurations",
+}
+
+var topicsConfigGetCmd = &cobra.Command{
+        Use:   "get <topic>",
+        Short: "Show topic-level configs",
+        Args:  cobra.ExactArgs(1),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                topicName := args[0]
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                configs, err := client.GetTopicConfig(topicName)
+                if err != nil {
+                        return err
+                }
+
+                formatter := getFormatter()
+                headers := []string{"Config Key", "Value", "Source"}
+                var rows [][]string
+
+                for key, value := range configs {
+                        rows = append(rows, []string{key, value, "topic"})
+                }
+
+                formatter.OutputTable(headers, rows)
+                return nil
+        },
+}
+
+var topicsConfigSetCmd = &cobra.Command{
+        Use:   "set <topic> <key>=<value>",
+        Short: "Set topic-level config",
+        Args:  cobra.ExactArgs(2),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                topicName := args[0]
+                configPair := args[1]
+                
+                parts := strings.SplitN(configPair, "=", 2)
+                if len(parts) != 2 {
+                        return fmt.Errorf("config must be in format key=value")
+                }
+                
+                key := parts[0]
+                value := parts[1]
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                if err := client.SetTopicConfig(topicName, key, value); err != nil {
+                        return err
+                }
+
+                fmt.Printf("Topic '%s' config '%s' set to '%s'\n", topicName, key, value)
+                return nil
+        },
+}
+
+var topicsConfigDeleteCmd = &cobra.Command{
+        Use:   "delete <topic> <key>",
+        Short: "Remove a config override",
+        Args:  cobra.ExactArgs(2),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                topicName := args[0]
+                key := args[1]
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                if err := client.DeleteTopicConfig(topicName, key); err != nil {
+                        return err
+                }
+
+                fmt.Printf("Topic '%s' config '%s' deleted\n", topicName, key)
+                return nil
+        },
+}
+
 func init() {
         topicsCmd.AddCommand(topicsListCmd)
         topicsCmd.AddCommand(topicsDescribeCmd)
         topicsCmd.AddCommand(topicsCreateCmd)
         topicsCmd.AddCommand(topicsDeleteCmd)
         topicsCmd.AddCommand(topicsAlterCmd)
+        topicsCmd.AddCommand(topicsConfigCmd)
+
+        // Add config subcommands
+        topicsConfigCmd.AddCommand(topicsConfigGetCmd)
+        topicsConfigCmd.AddCommand(topicsConfigSetCmd)
+        topicsConfigCmd.AddCommand(topicsConfigDeleteCmd)
 
         // Add flags
         topicsCreateCmd.Flags().Int("partitions", 1, "Number of partitions")

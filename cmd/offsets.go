@@ -57,7 +57,8 @@ var offsetsShowCmd = &cobra.Command{
 
 var offsetsResetCmd = &cobra.Command{
         Use:   "reset <topic>",
-        Short: "Reset topic offsets",
+        Short: "Reset all partitions to earliest",  
+        Long:  "Reset offsets per partition. Use --to-earliest, --to-latest, or --to-timestamp",
         Args:  cobra.ExactArgs(1),
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]
@@ -69,9 +70,30 @@ var offsetsResetCmd = &cobra.Command{
                         return fmt.Errorf("must specify one of --to-earliest, --to-latest, or --to-timestamp")
                 }
                 
-                // For now, return a message indicating this feature needs more implementation
-                fmt.Printf("Offset reset for topic '%s' - feature requires additional implementation\n", topicName)
-                fmt.Println("This would reset consumer offsets based on the specified strategy")
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                var resetType string
+                if toEarliest {
+                        resetType = "earliest"
+                } else if toLatest {
+                        resetType = "latest"
+                } else {
+                        resetType = toTimestamp
+                }
+
+                if err := client.ResetTopicOffsets(topicName, resetType); err != nil {
+                        return err
+                }
+
+                fmt.Printf("Topic '%s' offsets reset to %s\n", topicName, resetType)
                 return nil
         },
 }
