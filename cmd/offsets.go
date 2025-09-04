@@ -102,6 +102,10 @@ func init() {
         offsetsCmd.AddCommand(offsetsShowCmd)
         offsetsCmd.AddCommand(offsetsResetCmd)
 
+        // Add completion support
+        offsetsShowCmd.ValidArgsFunction = completeTopics
+        offsetsResetCmd.ValidArgsFunction = completeTopics
+
         // Add flags for reset command
         offsetsResetCmd.Flags().Bool("to-earliest", false, "Reset to earliest offset")
         offsetsResetCmd.Flags().Bool("to-latest", false, "Reset to latest offset")

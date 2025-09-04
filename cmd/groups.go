@@ -211,6 +211,12 @@ func init() {
         groupsCmd.AddCommand(groupsResetCmd)
         groupsCmd.AddCommand(groupsDeleteCmd)
 
+        // Add completion support
+        groupsDescribeCmd.ValidArgsFunction = completeGroups
+        groupsLagCmd.ValidArgsFunction = completeGroups
+        groupsResetCmd.ValidArgsFunction = completeGroups
+        groupsDeleteCmd.ValidArgsFunction = completeGroups
+
         // Add flags for reset command
         groupsResetCmd.Flags().Bool("to-earliest", false, "Reset to earliest offset")
         groupsResetCmd.Flags().Bool("to-latest", false, "Reset to latest offset")

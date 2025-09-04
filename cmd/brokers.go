@@ -225,6 +225,11 @@ func init() {
         brokersCmd.AddCommand(brokersMetricsCmd)
         brokersCmd.AddCommand(brokersConfigsCmd)
 
+        // Add completion support
+        brokersDescribeCmd.ValidArgsFunction = completeBrokerIDs
+        brokersConfigsGetCmd.ValidArgsFunction = completeBrokerIDs
+        brokersConfigsSetCmd.ValidArgsFunction = completeBrokerIDs
+
         // Add config subcommands
         brokersConfigsCmd.AddCommand(brokersConfigsListCmd)
         brokersConfigsCmd.AddCommand(brokersConfigsGetCmd)

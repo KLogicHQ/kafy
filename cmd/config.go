@@ -288,6 +288,10 @@ func init() {
         configCmd.AddCommand(configExportCmd)
         configCmd.AddCommand(configImportCmd)
 
+        // Add completion support
+        configUseCmd.ValidArgsFunction = completeClusters
+        configDeleteCmd.ValidArgsFunction = completeClusters
+
         // Add flags
         configAddCmd.Flags().String("bootstrap", "", "Bootstrap servers (required)")
         configAddCmd.Flags().String("zookeeper", "", "Zookeeper connection string")

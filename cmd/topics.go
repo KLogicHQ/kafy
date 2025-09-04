@@ -314,6 +314,14 @@ func init() {
         topicsCmd.AddCommand(topicsAlterCmd)
         topicsCmd.AddCommand(topicsConfigCmd)
 
+        // Add completion support
+        topicsDescribeCmd.ValidArgsFunction = completeTopics
+        topicsDeleteCmd.ValidArgsFunction = completeTopics
+        topicsAlterCmd.ValidArgsFunction = completeTopics
+        topicsConfigGetCmd.ValidArgsFunction = completeTopics
+        topicsConfigSetCmd.ValidArgsFunction = completeTopics
+        topicsConfigDeleteCmd.ValidArgsFunction = completeTopics
+
         // Add config subcommands
         topicsConfigCmd.AddCommand(topicsConfigGetCmd)
         topicsConfigCmd.AddCommand(topicsConfigSetCmd)

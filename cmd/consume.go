@@ -18,6 +18,7 @@ var consumeCmd = &cobra.Command{
         Use:   "consume <topic>",
         Short: "Consume messages from a topic",
         Args:  cobra.ExactArgs(1),
+        ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]
                 group, _ := cmd.Flags().GetString("group")
