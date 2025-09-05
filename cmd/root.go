@@ -64,23 +64,6 @@ func init() {
                 return []string{"table", "json", "yaml"}, cobra.ShellCompDirectiveDefault
         })
 
-        // Use custom help function only for root command to preserve subcommand help
-        rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-                if cmd == rootCmd {
-                        // Custom help for root command only
-                        fmt.Print(cmd.Long)
-                        fmt.Print("\n\n")
-                        if cmd.HasAvailableLocalFlags() {
-                                fmt.Print("Flags:\n")
-                                fmt.Print(cmd.LocalFlags().FlagUsages())
-                                fmt.Print("\n")
-                        }
-                        fmt.Printf("Use \"%s [command] --help\" for more information about a command.\n", cmd.CommandPath())
-                } else {
-                        // Use default help for subcommands
-                        cmd.Parent().HelpFunc()(cmd, args)
-                }
-        })
 
         // Enable completion command
         rootCmd.CompletionOptions.DisableDefaultCmd = false
