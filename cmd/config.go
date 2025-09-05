@@ -67,16 +67,19 @@ var configCurrentCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
-                result := map[string]interface{}{
-                        "name":      cfg.CurrentContext,
-                        "bootstrap": cluster.Bootstrap,
-                }
                 
-                if cluster.Zookeeper != "" {
-                        result["zookeeper"] = cluster.Zookeeper
+                // Create a structured output for better table formatting
+                currentConfig := struct {
+                        Name      string `json:"name" yaml:"name"`
+                        Bootstrap string `json:"bootstrap" yaml:"bootstrap"`
+                        Zookeeper string `json:"zookeeper,omitempty" yaml:"zookeeper,omitempty"`
+                }{
+                        Name:      cfg.CurrentContext,
+                        Bootstrap: cluster.Bootstrap,
+                        Zookeeper: cluster.Zookeeper,
                 }
 
-                return formatter.Output(result)
+                return formatter.Output(currentConfig)
         },
 }
 

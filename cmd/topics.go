@@ -209,6 +209,36 @@ var topicsConfigCmd = &cobra.Command{
         Long:  "Commands for managing topic-level configurations",
 }
 
+var topicsConfigListCmd = &cobra.Command{
+        Use:   "list [topic]",
+        Short: "List topic configurations",
+        Args:  cobra.MaximumNArgs(1),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                var topicName string
+                if len(args) > 0 {
+                        topicName = args[0]
+                }
+
+                configs, err := client.GetTopicConfig(topicName)
+                if err != nil {
+                        return err
+                }
+
+                formatter := getFormatter()
+                return formatter.Output(configs)
+        },
+}
+
 var topicsConfigGetCmd = &cobra.Command{
         Use:   "get <topic>",
         Short: "Show topic-level configs",
@@ -323,9 +353,13 @@ func init() {
         topicsConfigDeleteCmd.ValidArgsFunction = completeTopics
 
         // Add config subcommands
+        topicsConfigCmd.AddCommand(topicsConfigListCmd)
         topicsConfigCmd.AddCommand(topicsConfigGetCmd)
         topicsConfigCmd.AddCommand(topicsConfigSetCmd)
         topicsConfigCmd.AddCommand(topicsConfigDeleteCmd)
+        
+        // Add completion support for config list
+        topicsConfigListCmd.ValidArgsFunction = completeTopics
 
         // Add flags
         topicsCreateCmd.Flags().Int("partitions", 1, "Number of partitions")

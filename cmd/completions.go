@@ -13,17 +13,22 @@ import (
 func completeTopics(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
         cfg, err := config.LoadConfig()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
+        }
+
+        // Check if we have a current context configured
+        if cfg.CurrentContext == "" {
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         client, err := kafka.NewClient(cfg)
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         topics, err := client.ListTopics()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         var topicNames []string
@@ -31,34 +36,38 @@ func completeTopics(cmd *cobra.Command, args []string, toComplete string) ([]str
                 topicNames = append(topicNames, topic.Name)
         }
 
-        return topicNames, cobra.ShellCompDirectiveDefault
+        return topicNames, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeGroups provides completion for consumer group names
 func completeGroups(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
         cfg, err := config.LoadConfig()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
+        }
+
+        if cfg.CurrentContext == "" {
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         client, err := kafka.NewClient(cfg)
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         groups, err := client.ListConsumerGroups()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
-        return groups, cobra.ShellCompDirectiveDefault
+        return groups, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeClusters provides completion for cluster names
 func completeClusters(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
         cfg, err := config.LoadConfig()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         var clusterNames []string
@@ -66,35 +75,39 @@ func completeClusters(cmd *cobra.Command, args []string, toComplete string) ([]s
                 clusterNames = append(clusterNames, name)
         }
 
-        return clusterNames, cobra.ShellCompDirectiveDefault
+        return clusterNames, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeBrokerIDs provides completion for broker IDs
 func completeBrokerIDs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
         cfg, err := config.LoadConfig()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
+        }
+
+        if cfg.CurrentContext == "" {
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         client, err := kafka.NewClient(cfg)
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         brokers, err := client.ListBrokers()
         if err != nil {
-                return nil, cobra.ShellCompDirectiveError
+                return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
         var brokerIDs []string
         for _, broker := range brokers {
-                brokerIDs = append(brokerIDs, string(rune(broker.ID + '0')))
+                brokerIDs = append(brokerIDs, fmt.Sprintf("%d", broker.ID))
         }
 
-        return brokerIDs, cobra.ShellCompDirectiveDefault
+        return brokerIDs, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeOutputFormats provides completion for output formats
 func completeOutputFormats(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-        return []string{"table", "json", "yaml"}, cobra.ShellCompDirectiveDefault
+        return []string{"table", "json", "yaml"}, cobra.ShellCompDirectiveNoFileComp
 }
