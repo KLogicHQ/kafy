@@ -37,7 +37,12 @@ jobs:
       id: build
       run: |
         mkdir -p release/dist
-        VERSION="v1.0.0"
+        # Extract version from tag, fallback to 0.0.2 for non-tag builds
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION="${{ github.ref_name }}"
+        else
+          VERSION="v0.0.2"
+        fi
         
         # Build using Docker buildx
         docker buildx build \
@@ -121,7 +126,12 @@ jobs:
     - name: Build macOS ${{ matrix.arch }}
       run: |
         mkdir -p release/dist
-        VERSION="v1.0.0"
+        # Extract version from tag, fallback to 0.0.2 for non-tag builds
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION="${{ github.ref_name }}"
+        else
+          VERSION="v0.0.2"
+        fi
         
         # Build binary
         CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kaf-darwin-${{ matrix.arch }} .
@@ -188,7 +198,12 @@ jobs:
     - name: Build Windows amd64
       run: |
         mkdir -p release/dist
-        $VERSION = "v1.0.0"
+        # Extract version from tag, fallback to 0.0.2 for non-tag builds
+        if ("${{ github.ref }}" -like "refs/tags/*") {
+          $VERSION = "${{ github.ref_name }}"
+        } else {
+          $VERSION = "v0.0.2"
+        }
         
         # Build binary
         $env:CGO_ENABLED = "1"
@@ -254,8 +269,15 @@ jobs:
         echo "✅ Found $file_count release files:"
         ls -la release-files/
         
+        # Extract version from tag for validation
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION="${{ github.ref_name }}"
+        else
+          VERSION="v0.0.2"
+        fi
+        
         # Verify all expected platforms are present
-        expected_files="kaf-v1.0.0-linux-amd64.tar.gz kaf-v1.0.0-linux-arm64.tar.gz kaf-v1.0.0-darwin-amd64.tar.gz kaf-v1.0.0-darwin-arm64.tar.gz kaf-v1.0.0-windows-amd64.zip"
+        expected_files="kaf-$VERSION-linux-amd64.tar.gz kaf-$VERSION-linux-arm64.tar.gz kaf-$VERSION-darwin-amd64.tar.gz kaf-$VERSION-darwin-arm64.tar.gz kaf-$VERSION-windows-amd64.zip"
         missing_files=""
         
         for file in $expected_files; do
