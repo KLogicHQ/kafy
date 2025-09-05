@@ -21,24 +21,21 @@ var (
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.
 
-Usage:
-  kaf [command] [subcommand] [flags] [options]
-
 CORE COMMANDS
-  config:        Manage cluster configurations and contexts
-  topics:        Manage Kafka topics (create, list, describe, delete)
-  groups:        Manage consumer groups and offsets
-  produce:       Produce messages to topics
-  consume:       Consume messages from topics
-  brokers:       Inspect and manage Kafka brokers
-  offsets:       View and manage topic/partition offsets
-  health:        Check cluster health and connectivity
-  util:          Utility commands for cluster administration
+  config        Manage cluster configurations and contexts
+  topics        Manage Kafka topics (create, list, describe, delete)
+  groups        Manage consumer groups and offsets
+  produce       Produce messages to topics
+  consume       Consume messages from topics
+  brokers       Inspect and manage Kafka brokers
+  offsets       View and manage topic/partition offsets
+  health        Check cluster health and connectivity
+  util          Utility commands for cluster administration
 
-CONTEXT COMMANDS
-  config current-context:    Display the current context
-  config use-context:        Switch to a different cluster context
-  config get-contexts:       List all configured contexts
+ADDITIONAL COMMANDS
+  completion    Generate the autocompletion script for the specified shell
+  help          Help about any command
+  version       Show version information
 
 EXAMPLES
   $ kaf config add my-cluster --bootstrap kafka.example.com:9092
