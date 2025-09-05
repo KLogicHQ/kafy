@@ -232,7 +232,8 @@ func (c *Client) AlterTopicPartitions(topicName string, newPartitionCount int) e
 }
 
 func (c *Client) GetTopicOffsets(topicName string) (map[int32]kafka.Offset, error) {
-        consumer, err := c.CreateConsumer("")
+        // Use a temporary group ID for offset queries - this won't affect actual consumer groups
+        consumer, err := c.CreateConsumer("kaf-offsets-query-temp")
         if err != nil {
                 return nil, err
         }
