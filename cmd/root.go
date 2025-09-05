@@ -9,11 +9,14 @@ import (
         "github.com/spf13/cobra"
 )
 
+const version = "1.0.0"
+
 var (
         outputFormat string
         rootCmd      = &cobra.Command{
-                Use:   "kaf",
-                Short: "Kafka Productivity CLI - A Unified CLI for Kafka",
+                Use:     "kaf",
+                Version: version,
+                Short:   "Kafka Productivity CLI - A Unified CLI for Kafka",
                 Long: `kaf is a comprehensive CLI tool for managing Kafka clusters.
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.`,

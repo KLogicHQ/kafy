@@ -68,18 +68,32 @@ var configCurrentCmd = &cobra.Command{
 
                 formatter := getFormatter()
                 
-                // Create a structured output for better table formatting
-                currentConfig := struct {
-                        Name      string `json:"name" yaml:"name"`
-                        Bootstrap string `json:"bootstrap" yaml:"bootstrap"`
-                        Zookeeper string `json:"zookeeper,omitempty" yaml:"zookeeper,omitempty"`
-                }{
-                        Name:      cfg.CurrentContext,
-                        Bootstrap: cluster.Bootstrap,
-                        Zookeeper: cluster.Zookeeper,
+                if outputFormat == "table" {
+                        // For table output, show clean formatted display
+                        headers := []string{"Field", "Value"}
+                        var rows [][]string
+                        
+                        rows = append(rows, []string{"Context", cfg.CurrentContext})
+                        rows = append(rows, []string{"Bootstrap", cluster.Bootstrap})
+                        if cluster.Zookeeper != "" {
+                                rows = append(rows, []string{"Zookeeper", cluster.Zookeeper})
+                        }
+                        
+                        formatter.OutputTable(headers, rows)
+                        return nil
+                } else {
+                        // For JSON/YAML, use structured output
+                        currentConfig := struct {
+                                Name      string `json:"name" yaml:"name"`
+                                Bootstrap string `json:"bootstrap" yaml:"bootstrap"`
+                                Zookeeper string `json:"zookeeper,omitempty" yaml:"zookeeper,omitempty"`
+                        }{
+                                Name:      cfg.CurrentContext,
+                                Bootstrap: cluster.Bootstrap,
+                                Zookeeper: cluster.Zookeeper,
+                        }
+                        return formatter.Output(currentConfig)
                 }
-
-                return formatter.Output(currentConfig)
         },
 }
 
@@ -235,7 +249,28 @@ var configExportCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
-                return formatter.Output(cfg)
+                if outputFormat == "table" {
+                        // For table output, show structured cluster information
+                        headers := []string{"Context", "Bootstrap", "Zookeeper", "Current"}
+                        var rows [][]string
+                        
+                        for name, cluster := range cfg.Clusters {
+                                current := ""
+                                if name == cfg.CurrentContext {
+                                        current = "*"
+                                }
+                                zk := cluster.Zookeeper
+                                if zk == "" {
+                                        zk = "-"
+                                }
+                                rows = append(rows, []string{name, cluster.Bootstrap, zk, current})
+                        }
+                        
+                        formatter.OutputTable(headers, rows)
+                        return nil
+                } else {
+                        return formatter.Output(cfg)
+                }
         },
 }
 

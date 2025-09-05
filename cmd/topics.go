@@ -203,13 +203,13 @@ var topicsAlterCmd = &cobra.Command{
 }
 
 // Topic config commands
-var topicsConfigCmd = &cobra.Command{
-        Use:   "config",
+var topicsConfigsCmd = &cobra.Command{
+        Use:   "configs",
         Short: "Manage topic configurations",
         Long:  "Commands for managing topic-level configurations",
 }
 
-var topicsConfigListCmd = &cobra.Command{
+var topicsConfigsListCmd = &cobra.Command{
         Use:   "list [topic]",
         Short: "List topic configurations",
         Args:  cobra.MaximumNArgs(1),
@@ -239,7 +239,7 @@ var topicsConfigListCmd = &cobra.Command{
         },
 }
 
-var topicsConfigGetCmd = &cobra.Command{
+var topicsConfigsGetCmd = &cobra.Command{
         Use:   "get <topic>",
         Short: "Show topic-level configs",
         Args:  cobra.ExactArgs(1),
@@ -274,7 +274,7 @@ var topicsConfigGetCmd = &cobra.Command{
         },
 }
 
-var topicsConfigSetCmd = &cobra.Command{
+var topicsConfigsSetCmd = &cobra.Command{
         Use:   "set <topic> <key>=<value>",
         Short: "Set topic-level config",
         Args:  cobra.ExactArgs(2),
@@ -309,7 +309,7 @@ var topicsConfigSetCmd = &cobra.Command{
         },
 }
 
-var topicsConfigDeleteCmd = &cobra.Command{
+var topicsConfigsDeleteCmd = &cobra.Command{
         Use:   "delete <topic> <key>",
         Short: "Remove a config override",
         Args:  cobra.ExactArgs(2),
@@ -342,24 +342,24 @@ func init() {
         topicsCmd.AddCommand(topicsCreateCmd)
         topicsCmd.AddCommand(topicsDeleteCmd)
         topicsCmd.AddCommand(topicsAlterCmd)
-        topicsCmd.AddCommand(topicsConfigCmd)
+        topicsCmd.AddCommand(topicsConfigsCmd)
 
         // Add completion support
         topicsDescribeCmd.ValidArgsFunction = completeTopics
         topicsDeleteCmd.ValidArgsFunction = completeTopics
         topicsAlterCmd.ValidArgsFunction = completeTopics
-        topicsConfigGetCmd.ValidArgsFunction = completeTopics
-        topicsConfigSetCmd.ValidArgsFunction = completeTopics
-        topicsConfigDeleteCmd.ValidArgsFunction = completeTopics
+        topicsConfigsGetCmd.ValidArgsFunction = completeTopics
+        topicsConfigsSetCmd.ValidArgsFunction = completeTopics
+        topicsConfigsDeleteCmd.ValidArgsFunction = completeTopics
 
         // Add config subcommands
-        topicsConfigCmd.AddCommand(topicsConfigListCmd)
-        topicsConfigCmd.AddCommand(topicsConfigGetCmd)
-        topicsConfigCmd.AddCommand(topicsConfigSetCmd)
-        topicsConfigCmd.AddCommand(topicsConfigDeleteCmd)
+        topicsConfigsCmd.AddCommand(topicsConfigsListCmd)
+        topicsConfigsCmd.AddCommand(topicsConfigsGetCmd)
+        topicsConfigsCmd.AddCommand(topicsConfigsSetCmd)
+        topicsConfigsCmd.AddCommand(topicsConfigsDeleteCmd)
         
         // Add completion support for config list
-        topicsConfigListCmd.ValidArgsFunction = completeTopics
+        topicsConfigsListCmd.ValidArgsFunction = completeTopics
 
         // Add flags
         topicsCreateCmd.Flags().Int("partitions", 1, "Number of partitions")
