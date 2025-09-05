@@ -123,9 +123,9 @@ kaf topics describe orders
 kaf topics delete test-topic
 
 # Manage topic configurations
-kaf topics config list orders
-kaf topics config get orders
-kaf topics config set orders retention.ms=86400000
+kaf topics configs list      # List configs for ALL topics
+kaf topics configs get orders # Get configs for specific topic
+kaf topics configs set orders retention.ms=86400000
 ```
 
 ### 3. Produce Messages
@@ -190,10 +190,10 @@ kaf consume orders --output json --limit 5
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf topics config list [topic]` | List all topic configurations | `kaf topics config list orders` |
-| `kaf topics config get <topic>` | Show topic-specific configs | `kaf topics config get orders` |
-| `kaf topics config set <topic> <key>=<value>` | Set topic configuration | `kaf topics config set orders retention.ms=86400000` |
-| `kaf topics config delete <topic> <key>` | Remove config override | `kaf topics config delete orders cleanup.policy` |
+| `kaf topics configs list` | List configurations for all topics | Shows configs for every topic in cluster |
+| `kaf topics configs get <topic>` | Show topic-specific configs | `kaf topics configs get orders` |
+| `kaf topics configs set <topic> <key>=<value>` | Set topic configuration | `kaf topics configs set orders retention.ms=86400000` |
+| `kaf topics configs delete <topic> <key>` | Remove config override | `kaf topics configs delete orders cleanup.policy` |
 
 ### Consumer Group Management
 
@@ -221,7 +221,7 @@ kaf consume orders --output json --limit 5
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf offsets show <topic>` | Show partition offsets | `kaf offsets show orders` |
+| `kaf offsets show <topic>` | Show partition offsets for topic | `kaf offsets show orders` (fixed group.id error) |
 | `kaf offsets reset <topic>` | Reset partition offsets | `kaf offsets reset orders --to-earliest` |
 
 ### Broker Management
@@ -236,8 +236,8 @@ kaf consume orders --output json --limit 5
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf brokers configs list` | List all broker configurations | Show comprehensive broker settings |
-| `kaf brokers configs get <broker-id>` | Show specific broker config | `kaf brokers configs get 1` |
+| `kaf brokers configs list` | List configurations for all brokers | Shows 45+ comprehensive settings per broker |
+| `kaf brokers configs get <broker-id>` | Show specific broker config | `kaf brokers configs get 1` (returns same 45+ configs) |
 | `kaf brokers configs set <broker-id> <key>=<value>` | Update broker config | `kaf brokers configs set 1 log.retention.hours=72` |
 
 ### Health & Monitoring
@@ -399,30 +399,27 @@ echo "Current lag: $LAG"
 ### Topic Configuration Management
 
 ```bash
-# List all topic configurations
-kaf topics config list
+# List configurations for all topics (comprehensive view)
+kaf topics configs list
 
-# Show configurations for specific topic
-kaf topics config list orders
-
-# Get detailed config for a topic
-kaf topics config get orders
+# Get detailed configs for specific topic
+kaf topics configs get orders
 
 # Update topic settings
-kaf topics config set orders retention.ms=604800000  # 7 days
-kaf topics config set orders segment.ms=3600000      # 1 hour
+kaf topics configs set orders retention.ms=604800000  # 7 days
+kaf topics configs set orders segment.ms=3600000      # 1 hour
 
 # Remove configuration overrides
-kaf topics config delete orders cleanup.policy
+kaf topics configs delete orders cleanup.policy
 ```
 
 ### Broker Configuration Management
 
 ```bash
-# List all broker configurations (shows comprehensive settings)
+# List all broker configurations (shows 45+ comprehensive settings)
 kaf brokers configs list
 
-# View specific broker configuration  
+# View specific broker configuration (consistent with list - shows same 45+ configs)
 kaf brokers configs get 1
 
 # Update broker settings
@@ -455,8 +452,8 @@ kaf topics describe my-topic
 kaf topics list
 
 # Check topic configurations
-kaf topics config list my-topic
-kaf topics config get my-topic
+kaf topics configs list      # All topics
+kaf topics configs get my-topic  # Specific topic
 ```
 
 ### Consumer Issues
