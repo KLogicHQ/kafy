@@ -24,7 +24,7 @@ producers, consumers, and cluster administration.
 Usage:
   kaf [command] [subcommand] [flags] [options]
 
-**CORE COMMANDS**
+CORE COMMANDS:
   config        Manage cluster configurations and contexts
   topics        Manage Kafka topics (create, list, describe, delete)
   groups        Manage consumer groups and offsets
@@ -35,12 +35,12 @@ Usage:
   health        Check cluster health and connectivity
   util          Utility commands for cluster administration
 
-**ADDITIONAL COMMANDS**
+ADDITIONAL COMMANDS:
   completion    Generate the autocompletion script for the specified shell
   help          Help about any command
   version       Show version information
 
-**EXAMPLES**
+EXAMPLES:
   $ kaf config add my-cluster --bootstrap kafka.example.com:9092
   $ kaf topics list
   $ kaf topics create orders --partitions 3 --replication 2
@@ -58,7 +58,7 @@ func Execute() error {
 
 func init() {
         rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
-        
+
         // Add completion for output format
         rootCmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
                 return []string{"table", "json", "yaml"}, cobra.ShellCompDirectiveDefault
