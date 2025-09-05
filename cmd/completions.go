@@ -1,6 +1,7 @@
 package cmd
 
 import (
+        "fmt"
         "kaf/config"
         "kaf/internal/kafka"
         

@@ -1,16 +1,20 @@
 # 🚀 kaf - A Unified CLI for Kafka
 
-A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a **kubectl-like design philosophy**. Replace complex native `kafka-*` shell scripts with intuitive, short commands.
+A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a **kubectl-like design philosophy**. Replace complex native `kafka-*` shell scripts with intuitive, short commands and intelligent tab completion.
 
 ## 🎯 Features
 
 - **Context-aware operations** - Switch between dev, staging, and prod clusters seamlessly
 - **Unified command structure** - kubectl-inspired commands for all Kafka operations
+- **Intelligent tab completion** - Auto-complete topics, consumer groups, brokers, and more
 - **Multiple output formats** - Human-readable tables, JSON, and YAML for automation
-- **Topic management** - Create, list, describe, and delete topics with ease
+- **Comprehensive topic management** - Create, list, describe, delete, and configure topics
 - **Message operations** - Produce and consume messages with various formats
-- **Consumer group management** - Monitor and manage consumer groups
-- **Health monitoring** - Check cluster and broker health
+- **Consumer group management** - Monitor, reset, and manage consumer groups
+- **Broker monitoring** - Inspect brokers, configurations, and health
+- **Advanced configuration** - Topic-level and broker-level config management
+- **Offset management** - Show and reset partition offsets
+- **Health monitoring** - Complete cluster health diagnostics
 - **Configuration management** - Store and switch between multiple cluster configs
 
 ## 🛠 Installation
@@ -30,8 +34,59 @@ sudo mv kaf /usr/local/bin/
 
 ### Requirements
 
-- Go 1.19+ (for building)
+- Go 1.21+ (for building)
 - Access to Kafka cluster(s)
+
+## ⚡ Tab Completion Setup
+
+kaf provides intelligent tab completion for all shells. Set it up once and get auto-completion for topics, consumer groups, broker IDs, cluster names, and command flags.
+
+### Bash Completion
+
+```bash
+# For current session only
+source <(kaf completion bash)
+
+# Install permanently on Linux
+kaf completion bash | sudo tee /etc/bash_completion.d/kaf
+
+# Install permanently on macOS (with Homebrew bash-completion)
+kaf completion bash > $(brew --prefix)/etc/bash_completion.d/kaf
+```
+
+### Zsh Completion
+
+```bash
+# For current session only
+source <(kaf completion zsh)
+
+# Install permanently
+kaf completion zsh > ~/.zsh/completions/_kaf
+# Then add to ~/.zshrc: fpath=(~/.zsh/completions $fpath)
+
+# Or for oh-my-zsh users
+kaf completion zsh > ~/.oh-my-zsh/completions/_kaf
+```
+
+### Fish Completion
+
+```bash
+kaf completion fish > ~/.config/fish/completions/kaf.fish
+```
+
+### PowerShell Completion
+
+```powershell
+kaf completion powershell | Out-String | Invoke-Expression
+```
+
+### What Gets Auto-Completed
+
+- **Topics**: `kaf topics describe <TAB>` → Shows available topics
+- **Consumer Groups**: `kaf groups describe <TAB>` → Shows active groups  
+- **Brokers**: `kaf brokers describe <TAB>` → Shows broker IDs
+- **Clusters**: `kaf config use <TAB>` → Shows configured clusters
+- **Flags**: `--output <TAB>` → Shows table, json, yaml options
 
 ## 🚀 Quick Start
 
@@ -66,6 +121,11 @@ kaf topics describe orders
 
 # Delete a topic (with confirmation)
 kaf topics delete test-topic
+
+# Manage topic configurations
+kaf topics config list orders
+kaf topics config get orders
+kaf topics config set orders retention.ms=86400000
 ```
 
 ### 3. Produce Messages
@@ -101,60 +161,101 @@ kaf consume orders --group my-service
 kaf consume orders --output json --limit 5
 ```
 
-## 📖 Command Reference
+## 📖 Complete Command Reference
 
-### Configuration Commands
+### Configuration Management
 
-| Command | Description |
-|---------|-------------|
-| `kaf config list` | List all configured clusters |
-| `kaf config current` | Show current active cluster |
-| `kaf config use <name>` | Switch to different cluster |
-| `kaf config add <name> --bootstrap <server>` | Add new cluster |
-| `kaf config delete <name>` | Remove cluster |
-| `kaf config export` | Export config to YAML/JSON |
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf config list` | List all configured clusters | Show cluster overview with current context |
+| `kaf config current` | Show current active cluster | Display active cluster details |
+| `kaf config use <name>` | Switch to different cluster | `kaf config use prod` |
+| `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add dev --bootstrap localhost:9092` |
+| `kaf config delete <name>` | Remove cluster | `kaf config delete old-cluster` |
+| `kaf config rename <old> <new>` | Rename cluster | `kaf config rename dev development` |
+| `kaf config export` | Export config to YAML/JSON | Backup or share configurations |
+| `kaf config import <file>` | Import config from file | Restore from backup |
 
-### Topic Commands
+### Topic Management
 
-| Command | Description |
-|---------|-------------|
-| `kaf topics list` | List all topics |
-| `kaf topics describe <topic>` | Show topic details |
-| `kaf topics create <topic> --partitions <n> --replication <n>` | Create topic |
-| `kaf topics delete <topic>` | Delete topic |
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf topics list` | List all topics | Show topics with partition/replication info |
+| `kaf topics describe <topic>` | Show detailed topic information | `kaf topics describe orders` |
+| `kaf topics create <topic>` | Create new topic | `kaf topics create events --partitions 6 --replication 3` |
+| `kaf topics delete <topic>` | Delete topic | `kaf topics delete test-topic --force` |
+| `kaf topics alter <topic>` | Modify topic settings | `kaf topics alter orders --partitions 10` |
 
-### Consumer Group Commands
+### Topic Configuration Commands
 
-| Command | Description |
-|---------|-------------|
-| `kaf groups list` | List all consumer groups |
-| `kaf groups describe <group>` | Show group details |
-| `kaf groups lag <group>` | Show lag metrics |
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf topics config list [topic]` | List all topic configurations | `kaf topics config list orders` |
+| `kaf topics config get <topic>` | Show topic-specific configs | `kaf topics config get orders` |
+| `kaf topics config set <topic> <key>=<value>` | Set topic configuration | `kaf topics config set orders retention.ms=86400000` |
+| `kaf topics config delete <topic> <key>` | Remove config override | `kaf topics config delete orders cleanup.policy` |
 
-### Message Commands
+### Consumer Group Management
 
-| Command | Description |
-|---------|-------------|
-| `kaf produce <topic>` | Produce messages interactively |
-| `kaf produce <topic> --file <path>` | Produce from file |
-| `kaf produce <topic> --count <n>` | Generate test messages |
-| `kaf consume <topic>` | Consume messages |
-| `kaf consume <topic> --from-beginning` | Consume from start |
-| `kaf consume <topic> --limit <n>` | Limit message count |
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf groups list` | List all consumer groups | Show groups with member counts |
+| `kaf groups describe <group>` | Show detailed group information | `kaf groups describe my-service` |
+| `kaf groups lag <group>` | Show consumer lag metrics | `kaf groups lag payment-processor` |
+| `kaf groups reset <group>` | Reset consumer offsets | `kaf groups reset my-group --to-earliest` |
+| `kaf groups delete <group>` | Delete consumer group | `kaf groups delete inactive-group` |
 
-### Monitoring Commands
+### Message Operations
 
-| Command | Description |
-|---------|-------------|
-| `kaf brokers list` | List all brokers |
-| `kaf health check` | Run all health checks |
-| `kaf health brokers` | Check broker connectivity |
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf produce <topic>` | Produce messages interactively | `kaf produce orders` |
+| `kaf produce <topic> --file <path>` | Produce from file | `kaf produce orders --file data.json` |
+| `kaf produce <topic> --count <n>` | Generate test messages | `kaf produce orders --count 100` |
+| `kaf produce <topic> --key <key>` | Produce with specific key | `kaf produce orders --key user-123` |
+| `kaf consume <topic>` | Consume messages | `kaf consume orders --limit 50` |
+| `kaf consume <topic> --from-beginning` | Consume from start | `kaf consume orders --from-beginning` |
+| `kaf consume <topic> --group <group>` | Consume with group | `kaf consume orders --group my-app` |
+
+### Offset Management
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf offsets show <topic>` | Show partition offsets | `kaf offsets show orders` |
+| `kaf offsets reset <topic>` | Reset partition offsets | `kaf offsets reset orders --to-earliest` |
+
+### Broker Management
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf brokers list` | List all brokers | Show broker IDs and connection info |
+| `kaf brokers describe <broker-id>` | Show broker details | `kaf brokers describe 1` |
+| `kaf brokers metrics` | Show broker metrics | Display broker performance data |
+
+### Broker Configuration Commands
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf brokers configs list` | List all broker configurations | Show comprehensive broker settings |
+| `kaf brokers configs get <broker-id>` | Show specific broker config | `kaf brokers configs get 1` |
+| `kaf brokers configs set <broker-id> <key>=<value>` | Update broker config | `kaf brokers configs set 1 log.retention.hours=72` |
+
+### Health & Monitoring
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf health check` | Run comprehensive health checks | Full cluster diagnostics |
+| `kaf health brokers` | Check broker connectivity | `kaf health brokers` |
+| `kaf health topics` | Validate topic health | Check topic accessibility |
+| `kaf health groups` | Check consumer group health | Monitor group status |
 
 ### Utility Commands
 
-| Command | Description |
-|---------|-------------|
-| `kaf util random-key` | Generate random key |
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `kaf util random-key` | Generate random message key | For testing message keys |
+| `kaf util version` | Show version information | Display CLI version |
+| `kaf completion <shell>` | Generate completion scripts | `kaf completion bash` |
 
 ## 🔧 Configuration
 
@@ -242,6 +343,10 @@ kaf produce test-events --count 100
 
 # Monitor the data
 kaf consume test-events --from-beginning --limit 10
+
+# Configure topic settings
+kaf topics config set test-events retention.ms=3600000
+kaf topics config list test-events
 ```
 
 ### Production Operations
@@ -255,11 +360,16 @@ kaf health check
 
 # Monitor consumer lag
 kaf groups list
-kaf groups describe my-service
+kaf groups lag critical-processor
 
-# List topic details
+# Inspect broker configurations
+kaf brokers configs list
+kaf brokers describe 1
+
+# List topic details and configurations
 kaf topics list
 kaf topics describe critical-topic
+kaf topics config list critical-topic
 ```
 
 ### Automation & Scripting
@@ -275,7 +385,48 @@ if kaf topics describe user-events --output json > /dev/null 2>&1; then
 else
     echo "Creating topic..."
     kaf topics create user-events --partitions 6 --replication 3
+    
+    # Configure the topic
+    kaf topics config set user-events retention.ms=86400000
+    kaf topics config set user-events cleanup.policy=delete
 fi
+
+# Monitor consumer group lag
+LAG=$(kaf groups lag my-service --output json)
+echo "Current lag: $LAG"
+```
+
+### Topic Configuration Management
+
+```bash
+# List all topic configurations
+kaf topics config list
+
+# Show configurations for specific topic
+kaf topics config list orders
+
+# Get detailed config for a topic
+kaf topics config get orders
+
+# Update topic settings
+kaf topics config set orders retention.ms=604800000  # 7 days
+kaf topics config set orders segment.ms=3600000      # 1 hour
+
+# Remove configuration overrides
+kaf topics config delete orders cleanup.policy
+```
+
+### Broker Configuration Management
+
+```bash
+# List all broker configurations (shows comprehensive settings)
+kaf brokers configs list
+
+# View specific broker configuration  
+kaf brokers configs get 1
+
+# Update broker settings
+kaf brokers configs set 1 log.retention.hours=72
 ```
 
 ## 🆘 Troubleshooting
@@ -288,26 +439,49 @@ kaf health brokers
 
 # Verify current configuration
 kaf config current
+
+# Test with specific cluster
+kaf config use dev
+kaf brokers list
 ```
 
 ### Topic Issues
 
 ```bash
-# Check if topic exists
+# Check if topic exists and view details
 kaf topics describe my-topic
 
 # List all topics to verify
 kaf topics list
+
+# Check topic configurations
+kaf topics config list my-topic
+kaf topics config get my-topic
 ```
 
 ### Consumer Issues
 
 ```bash
-# Check consumer groups
+# Check consumer groups and lag
 kaf groups list
-
-# Monitor specific group
 kaf groups describe my-group
+kaf groups lag my-group
+
+# Reset consumer offsets if needed
+kaf groups reset my-group --to-earliest
+```
+
+### Configuration Issues
+
+```bash
+# Verify cluster configuration
+kaf config current
+
+# Export and inspect full config
+kaf config export --output yaml
+
+# Test cluster connectivity
+kaf health check
 ```
 
 ## 🤝 Contributing
@@ -315,7 +489,7 @@ kaf groups describe my-group
 1. Fork the repository
 2. Create your feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly with tab completion
 5. Submit a pull request
 
 ## 📄 License
@@ -326,4 +500,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Happy Kafka-ing! 🎉**
 
-For more help with any command, use `kaf <command> --help`
+For more help with any command, use `kaf <command> --help` or enable tab completion for the best experience.
