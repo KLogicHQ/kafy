@@ -32,7 +32,7 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
    ```bash
    # Linux/macOS
    tar -xzf kaf-v1.0.0-linux-amd64.tar.gz
-   
+
    # Windows (PowerShell)
    Expand-Archive kaf-v1.0.0-windows-amd64.zip
    ```
@@ -40,7 +40,7 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
    ```bash
    # Linux/macOS
    sudo mv kaf /usr/local/bin/
-   
+
    # Windows: Add the extracted folder to your PATH environment variable
    ```
 5. **Verify installation**:
@@ -58,27 +58,6 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
 - **librdkafka development libraries** - Required for Kafka connectivity
 - **Git** - For cloning the repository
 - **Docker** (optional) - For cross-platform builds
-
-#### Install Dependencies
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install -y librdkafka-dev build-essential
-```
-
-**macOS:**
-```bash
-brew install librdkafka
-```
-
-**Windows:**
-```bash
-# Using vcpkg (recommended)
-git clone https://github.com/Microsoft/vcpkg.git
-.\vcpkg\bootstrap-vcpkg.bat
-.\vcpkg\vcpkg install librdkafka:x64-windows
-```
 
 #### Build Instructions
 
@@ -117,11 +96,6 @@ The build script will:
 - Create distribution packages (tar.gz for Linux/macOS, zip for Windows)
 - Provide detailed build status for each platform
 
-### Requirements
-
-- **Go 1.21+** - For building from source
-- **librdkafka** - Kafka client library (see installation above)
-- **Access to Kafka cluster(s)** - For runtime usage
 
 ## ⚡ Tab Completion Setup
 
