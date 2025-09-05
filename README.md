@@ -214,11 +214,17 @@ kaf consume orders
 # Consume from beginning with limit
 kaf consume orders --from-beginning --limit 20
 
+# Consume from latest messages only
+kaf consume orders --from-latest
+
 # Consume with specific consumer group
 kaf consume orders --group my-service
 
 # Output in JSON format
 kaf consume orders --output json --limit 5
+
+# Tail messages in real-time (like tail -f)
+kaf util tail orders
 ```
 
 ## 📖 Complete Command Reference
@@ -275,6 +281,7 @@ kaf consume orders --output json --limit 5
 | `kaf produce <topic> --key <key>` | Produce with specific key | `kaf produce orders --key user-123` |
 | `kaf consume <topic>` | Consume messages | `kaf consume orders --limit 50` |
 | `kaf consume <topic> --from-beginning` | Consume from start | `kaf consume orders --from-beginning` |
+| `kaf consume <topic> --from-latest` | Consume from latest messages | `kaf consume orders --from-latest` |
 | `kaf consume <topic> --group <group>` | Consume with group | `kaf consume orders --group my-app` |
 
 ### Offset Management
@@ -314,6 +321,7 @@ kaf consume orders --output json --limit 5
 | Command | Description | Examples |
 |---------|-------------|----------|
 | `kaf util random-key` | Generate random message key | For testing message keys |
+| `kaf util tail <topic>` | Tail messages in real-time | `kaf util tail orders` |
 | `kaf util version` | Show version information | Display CLI version |
 | `kaf completion <shell>` | Generate completion scripts | `kaf completion bash` |
 
@@ -403,6 +411,9 @@ kaf produce test-events --count 100
 
 # Monitor the data
 kaf consume test-events --from-beginning --limit 10
+
+# Or tail real-time messages
+kaf util tail test-events
 
 # Configure topic settings
 kaf topics config set test-events retention.ms=3600000
