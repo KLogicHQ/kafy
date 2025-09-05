@@ -61,6 +61,18 @@ func init() {
                 return []string{"table", "json", "yaml"}, cobra.ShellCompDirectiveDefault
         })
 
+        // Customize help template to remove duplicate usage and available commands
+        rootCmd.SetHelpTemplate(`{{.Long | trimTrailingWhitespaces}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.
+`)
+
         // Enable completion command
         rootCmd.CompletionOptions.DisableDefaultCmd = false
         rootCmd.CompletionOptions.HiddenDefaultCmd = false
