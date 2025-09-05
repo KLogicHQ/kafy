@@ -50,21 +50,78 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
 
 ### Build from Source
 
+**For developers and contributors** - Build from source code:
+
+#### Prerequisites
+
+- **Go 1.21+** - Required for compilation
+- **librdkafka development libraries** - Required for Kafka connectivity
+- **Git** - For cloning the repository
+- **Docker** (optional) - For cross-platform builds
+
+#### Install Dependencies
+
+**Linux (Ubuntu/Debian):**
 ```bash
-# Clone and build
-git clone git@github.com:KLogicHQ/kaf.git
+sudo apt-get update
+sudo apt-get install -y librdkafka-dev build-essential
+```
+
+**macOS:**
+```bash
+brew install librdkafka
+```
+
+**Windows:**
+```bash
+# Using vcpkg (recommended)
+git clone https://github.com/Microsoft/vcpkg.git
+.\vcpkg\bootstrap-vcpkg.bat
+.\vcpkg\vcpkg install librdkafka:x64-windows
+```
+
+#### Build Instructions
+
+```bash
+# Clone the repository
+git clone https://github.com/KLogicHQ/kaf.git
 cd kaf
+
+# Download Go dependencies
 go mod tidy
+
+# Build for current platform
 go build -o kaf .
 
-# Make it globally available (optional)
-sudo mv kaf /usr/local/bin/
+# Optional: Install globally
+sudo mv kaf /usr/local/bin/  # Linux/macOS
+# Or add to PATH on Windows
 ```
+
+#### Cross-Platform Build
+
+Use the included build script for multi-platform binaries:
+
+```bash
+# Make executable and run
+chmod +x build.sh
+./build.sh
+
+# Find built packages in release/dist/
+ls release/dist/
+```
+
+The build script will:
+- Build for Linux (amd64, arm64) using Docker when available
+- Attempt native cross-compilation for macOS and Windows
+- Create distribution packages (tar.gz for Linux/macOS, zip for Windows)
+- Provide detailed build status for each platform
 
 ### Requirements
 
-- Go 1.21+ (for building)
-- Access to Kafka cluster(s)
+- **Go 1.21+** - For building from source
+- **librdkafka** - Kafka client library (see installation above)
+- **Access to Kafka cluster(s)** - For runtime usage
 
 ## ⚡ Tab Completion Setup
 
