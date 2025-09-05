@@ -3,6 +3,7 @@
 /bin/
 /build/
 /release/kaf-*
+/release/dist/
 
 # Editor/IDE files
 .idea/
