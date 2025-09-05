@@ -3,19 +3,19 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       create_release:
-        description: 'Create a GitHub release'
+        description: "Create a GitHub release"
         required: false
-        default: 'false'
+        default: "false"
         type: boolean
 
 env:
-  GO_VERSION: '1.21'
+  GO_VERSION: "1.21"
 
 jobs:
   # Version validation job - runs only on tag pushes
@@ -23,31 +23,31 @@ jobs:
     name: Validate Tag Version
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
-    - name: Validate tag matches source version
-      run: |
-        # Extract version from tag (remove 'v' prefix if present)
-        TAG_VERSION="${{ github.ref_name }}"
-        TAG_VERSION_CLEAN="${TAG_VERSION#v}"
-        
-        # Extract version from root.go
-        SOURCE_VERSION=$(grep 'const version = ' cmd/root.go | sed 's/.*"\(.*\)".*/\1/')
-        
-        echo "Tag version: $TAG_VERSION_CLEAN"
-        echo "Source version: $SOURCE_VERSION"
-        
-        if [ "$TAG_VERSION_CLEAN" != "$SOURCE_VERSION" ]; then
-          echo "❌ Version mismatch!"
-          echo "Tag version ($TAG_VERSION_CLEAN) does not match source version ($SOURCE_VERSION)"
-          echo "Please update the version in cmd/root.go to match the tag"
-          exit 1
-        else
-          echo "✅ Version validation passed"
-        fi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate tag matches source version
+        run: |
+          # Extract version from tag (remove 'v' prefix if present)
+          TAG_VERSION="${{ github.ref_name }}"
+          TAG_VERSION_CLEAN="${TAG_VERSION#v}"
+
+          # Extract version from root.go
+          SOURCE_VERSION=$(grep 'const version = ' cmd/root.go | sed 's/.*"\(.*\)".*/\1/')
+
+          echo "Tag version: $TAG_VERSION_CLEAN"
+          echo "Source version: $SOURCE_VERSION"
+
+          if [ "$TAG_VERSION_CLEAN" != "$SOURCE_VERSION" ]; then
+            echo "❌ Version mismatch!"
+            echo "Tag version ($TAG_VERSION_CLEAN) does not match source version ($SOURCE_VERSION)"
+            echo "Please update the version in cmd/root.go to match the tag"
+            exit 1
+          else
+            echo "✅ Version validation passed"
+          fi
 
   # Linux builds using Docker buildx
   build-linux:
@@ -58,73 +58,73 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build Linux ${{ matrix.arch }}
-      id: build
-      run: |
-        mkdir -p release/dist
-        # Extract version from tag, fail if not a tag build
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          VERSION="${{ github.ref_name }}"
-        else
-          echo "❌ No version tag found. This build requires a git tag."
-          exit 1
-        fi
-        
-        # Build using Docker buildx
-        docker buildx build \
-          --platform linux/${{ matrix.arch }} \
-          --target final \
-          --output type=local,dest=./release/docker-out-${{ matrix.arch }} \
-          .
-        
-        # Verify binary was created
-        if [ ! -f "./release/docker-out-${{ matrix.arch }}/root/kaf" ]; then
-          echo "❌ Binary not found in Docker output"
-          exit 1
-        fi
-        
-        # Copy binary to expected location
-        cp "./release/docker-out-${{ matrix.arch }}/root/kaf" "release/kaf-linux-${{ matrix.arch }}"
-        
-        # Verify binary is executable
-        chmod +x "release/kaf-linux-${{ matrix.arch }}"
-        
-        # Create package
-        PACKAGE_NAME="kaf-$VERSION-linux-${{ matrix.arch }}"
-        mkdir -p "release/$PACKAGE_NAME"
-        cp "release/kaf-linux-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
-        cp README.md "release/$PACKAGE_NAME/" 2>/dev/null || echo "README.md not found"
-        cp LICENSE "release/$PACKAGE_NAME/" 2>/dev/null || echo "LICENSE not found"
-        
-        # Create tar.gz
-        cd release
-        tar -czf "dist/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
-        cd ..
-        
-        # Verify package was created
-        if [ ! -f "release/dist/$PACKAGE_NAME.tar.gz" ]; then
-          echo "❌ Package creation failed"
-          exit 1
-        fi
-        
-        echo "✅ Linux ${{ matrix.arch }} package created successfully"
+      - name: Build Linux ${{ matrix.arch }}
+        id: build
+        run: |
+          mkdir -p release/dist
+          # Extract version from tag, fail if not a tag build
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            echo "❌ No version tag found. This build requires a git tag."
+            exit 1
+          fi
 
-    - name: Upload Linux ${{ matrix.arch }} artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: kaf-linux-${{ matrix.arch }}
-        path: |
-          release/kaf-linux-${{ matrix.arch }}
-          release/dist/kaf-*-linux-${{ matrix.arch }}.tar.gz
-        retention-days: 30
+          # Build using Docker buildx
+          docker buildx build \
+            --platform linux/${{ matrix.arch }} \
+            --target final \
+            --output type=local,dest=./release/docker-out-${{ matrix.arch }} \
+            .
+
+          # Verify binary was created
+          if [ ! -f "./release/docker-out-${{ matrix.arch }}/root/kaf" ]; then
+            echo "❌ Binary not found in Docker output"
+            exit 1
+          fi
+
+          # Copy binary to expected location
+          cp "./release/docker-out-${{ matrix.arch }}/root/kaf" "release/kaf-linux-${{ matrix.arch }}"
+
+          # Verify binary is executable
+          chmod +x "release/kaf-linux-${{ matrix.arch }}"
+
+          # Create package
+          PACKAGE_NAME="kaf-$VERSION-linux-${{ matrix.arch }}"
+          mkdir -p "release/$PACKAGE_NAME"
+          cp "release/kaf-linux-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
+          cp README.md "release/$PACKAGE_NAME/" 2>/dev/null || echo "README.md not found"
+          cp LICENSE "release/$PACKAGE_NAME/" 2>/dev/null || echo "LICENSE not found"
+
+          # Create tar.gz
+          cd release
+          tar -czf "dist/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+          cd ..
+
+          # Verify package was created
+          if [ ! -f "release/dist/$PACKAGE_NAME.tar.gz" ]; then
+            echo "❌ Package creation failed"
+            exit 1
+          fi
+
+          echo "✅ Linux ${{ matrix.arch }} package created successfully"
+
+      - name: Upload Linux ${{ matrix.arch }} artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaf-linux-${{ matrix.arch }}
+          path: |
+            release/kaf-linux-${{ matrix.arch }}
+            release/dist/kaf-*-linux-${{ matrix.arch }}.tar.gz
+          retention-days: 30
 
   # macOS builds using native runners
   build-macos:
@@ -135,65 +135,65 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-    - name: Install librdkafka
-      run: |
-        brew install librdkafka
+      - name: Install librdkafka
+        run: |
+          brew install librdkafka
 
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Build macOS ${{ matrix.arch }}
-      run: |
-        mkdir -p release/dist
-        # Extract version from tag, fail if not a tag build
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          VERSION="${{ github.ref_name }}"
-        else
-          echo "❌ No version tag found. This build requires a git tag."
-          exit 1
-        fi
-        
-        # Build binary
-        CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kaf-darwin-${{ matrix.arch }} .
-        
-        # Create package
-        PACKAGE_NAME="kaf-$VERSION-darwin-${{ matrix.arch }}"
-        mkdir -p "release/$PACKAGE_NAME"
-        cp "release/kaf-darwin-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
-        cp README.md LICENSE "release/$PACKAGE_NAME/" || true
-        
-        # Create tar.gz
-        cd release
-        tar -czf "dist/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
-        cd ..
-        
-        echo "✅ macOS ${{ matrix.arch }} package created"
+      - name: Build macOS ${{ matrix.arch }}
+        run: |
+          mkdir -p release/dist
+          # Extract version from tag, fail if not a tag build
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            echo "❌ No version tag found. This build requires a git tag."
+            exit 1
+          fi
 
-    - name: Upload macOS ${{ matrix.arch }} artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: kaf-darwin-${{ matrix.arch }}
-        path: |
-          release/kaf-darwin-${{ matrix.arch }}
-          release/dist/kaf-*-darwin-${{ matrix.arch }}.tar.gz
-        retention-days: 30
+          # Build binary
+          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kaf-darwin-${{ matrix.arch }} .
+
+          # Create package
+          PACKAGE_NAME="kaf-$VERSION-darwin-${{ matrix.arch }}"
+          mkdir -p "release/$PACKAGE_NAME"
+          cp "release/kaf-darwin-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
+          cp README.md LICENSE "release/$PACKAGE_NAME/" || true
+
+          # Create tar.gz
+          cd release
+          tar -czf "dist/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+          cd ..
+
+          echo "✅ macOS ${{ matrix.arch }} package created"
+
+      - name: Upload macOS ${{ matrix.arch }} artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaf-darwin-${{ matrix.arch }}
+          path: |
+            release/kaf-darwin-${{ matrix.arch }}
+            release/dist/kaf-*-darwin-${{ matrix.arch }}.tar.gz
+          retention-days: 30
 
   # Windows builds using native runners
   build-windows:
@@ -201,233 +201,235 @@ jobs:
     runs-on: windows-latest
     needs: [validate-version]
     if: always() && (needs.validate-version.result == 'success' || needs.validate-version.result == 'skipped')
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-    - name: Install librdkafka (Windows)
-      run: |
-        # Install vcpkg and librdkafka
-        git clone https://github.com/Microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg install librdkafka:x64-windows
-        
-        # Set environment variables for Go build
-        echo "CGO_CPPFLAGS=-I$(pwd)\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
-        echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkafka" >> $env:GITHUB_ENV
-        echo "PKG_CONFIG_PATH=$(pwd)\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
-      shell: powershell
+      - name: Install librdkafka (Windows)
+        run: |
+          # Install vcpkg and librdkafka
+          git clone https://github.com/Microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg install librdkafka:x64-windows
 
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~\AppData\Local\go-build
-          ~\go\pkg\mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+          # Set environment variables for Go build
+          echo "CGO_CPPFLAGS=-I$(pwd)\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkafka" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(pwd)\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
+        shell: powershell
 
-    - name: Build Windows amd64
-      run: |
-        mkdir -p release/dist
-        # Extract version from tag, fail if not a tag build
-        if ("${{ github.ref }}" -like "refs/tags/*") {
-          $VERSION = "${{ github.ref_name }}"
-        } else {
-          Write-Host "❌ No version tag found. This build requires a git tag."
-          exit 1
-        }
-        
-        # Build binary
-        $env:CGO_ENABLED = "1"
-        $env:GOOS = "windows"
-        $env:GOARCH = "amd64"
-        go build -o release/kaf-windows-amd64.exe .
-        
-        # Create package
-        $PACKAGE_NAME = "kaf-$VERSION-windows-amd64"
-        mkdir "release/$PACKAGE_NAME"
-        cp "release/kaf-windows-amd64.exe" "release/$PACKAGE_NAME/kaf.exe"
-        cp README.md "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
-        cp LICENSE "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
-        
-        # Create zip
-        Compress-Archive -Path "release/$PACKAGE_NAME" -DestinationPath "release/dist/$PACKAGE_NAME.zip"
-        
-        Write-Host "✅ Windows amd64 package created"
-      shell: powershell
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\AppData\Local\go-build
+            ~\go\pkg\mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Upload Windows artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: kaf-windows-amd64
-        path: |
-          release/kaf-windows-amd64.exe
-          release/dist/kaf-*-windows-amd64.zip
-        retention-days: 30
+      - name: Build Windows amd64
+        run: |
+          mkdir -p release/dist
+          # Extract version from tag, fail if not a tag build
+          if ("${{ github.ref }}" -like "refs/tags/*") {
+            $VERSION = "${{ github.ref_name }}"
+          } else {
+            Write-Host "❌ No version tag found. This build requires a git tag."
+            exit 1
+          }
+
+          # Build binary
+          $env:CGO_ENABLED = "1"
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -o release/kaf-windows-amd64.exe .
+
+          # Create package
+          $PACKAGE_NAME = "kaf-$VERSION-windows-amd64"
+          mkdir "release/$PACKAGE_NAME"
+          cp "release/kaf-windows-amd64.exe" "release/$PACKAGE_NAME/kaf.exe"
+          cp README.md "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
+          cp LICENSE "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
+
+          # Create zip
+          Compress-Archive -Path "release/$PACKAGE_NAME" -DestinationPath "release/dist/$PACKAGE_NAME.zip"
+
+          Write-Host "✅ Windows amd64 package created"
+        shell: powershell
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaf-windows-amd64
+          path: |
+            release/kaf-windows-amd64.exe
+            release/dist/kaf-*-windows-amd64.zip
+          retention-days: 30
 
   # Create GitHub release (only on tag push or manual trigger)
   release:
     name: Create Release
     needs: [validate-version, build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts/
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
 
-    - name: Organize release files
-      run: |
-        mkdir -p release-files
-        
-        # Copy all distribution packages
-        find artifacts/ -name "*.tar.gz" -exec cp {} release-files/ \;
-        find artifacts/ -name "*.zip" -exec cp {} release-files/ \;
-        
-        # Verify we have files to release
-        file_count=$(find release-files/ -type f | wc -l)
-        if [ $file_count -eq 0 ]; then
-          echo "❌ No release files found! Canceling release."
-          echo "Available artifacts:"
-          find artifacts/ -type f
-          exit 1
-        fi
-        
-        echo "✅ Found $file_count release files:"
-        ls -la release-files/
-        
-        # Extract version from tag for validation
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          VERSION="${{ github.ref_name }}"
-        else
-          echo "❌ No version tag found. Release requires a git tag."
-          exit 1
-        fi
-        
-        # Verify all expected platforms are present
-        expected_files="kaf-$VERSION-linux-amd64.tar.gz kaf-$VERSION-linux-arm64.tar.gz kaf-$VERSION-darwin-amd64.tar.gz kaf-$VERSION-darwin-arm64.tar.gz kaf-$VERSION-windows-amd64.zip"
-        missing_files=""
-        
-        for file in $expected_files; do
-          if [ ! -f "release-files/$file" ]; then
-            missing_files="$missing_files $file"
+      - name: Organize release files
+        run: |
+          mkdir -p release-files
+
+          # Copy all distribution packages
+          find artifacts/ -name "*.tar.gz" -exec cp {} release-files/ \;
+          find artifacts/ -name "*.zip" -exec cp {} release-files/ \;
+
+          # Verify we have files to release
+          file_count=$(find release-files/ -type f | wc -l)
+          if [ $file_count -eq 0 ]; then
+            echo "❌ No release files found! Canceling release."
+            echo "Available artifacts:"
+            find artifacts/ -type f
+            exit 1
           fi
-        done
-        
-        if [ ! -z "$missing_files" ]; then
-          echo "⚠️  Warning: Missing expected files:$missing_files"
-          echo "Proceeding with available files..."
-        fi
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: release-files/*
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-        fail_on_unmatched_files: true
-        body: |
-          ## 🚀 kaf - Kafka Productivity CLI ${{ github.ref_name }}
-          
-          A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a kubectl-like design philosophy.
-          
-          ### 📦 Downloads
-          
-          **Linux:**
-          - `kaf-${{ github.ref_name }}-linux-amd64.tar.gz` - Linux x86_64
-          - `kaf-${{ github.ref_name }}-linux-arm64.tar.gz` - Linux ARM64
-          
-          **macOS:**
-          - `kaf-${{ github.ref_name }}-darwin-amd64.tar.gz` - macOS Intel
-          - `kaf-${{ github.ref_name }}-darwin-arm64.tar.gz` - macOS Apple Silicon
-          
-          **Windows:**
-          - `kaf-${{ github.ref_name }}-windows-amd64.zip` - Windows x86_64
-          
-          ### 🛠 Installation
-          
-          1. Download the appropriate archive for your platform
-          2. Extract the archive: `tar -xzf kaf-*.tar.gz` (Linux/Mac) or unzip `kaf-*.zip` (Windows)
-          3. Move the `kaf` binary to your PATH
-          4. Run `kaf --help` to get started
-          
-          ### 🎯 Key Features
-          
-          - Context-aware operations across dev, staging, and prod clusters
-          - Intelligent tab completion for all commands and resources
-          - Real-time configuration fetching using DescribeConfigs API
-          - Multiple output formats (table, JSON, YAML)
-          - Comprehensive topic, broker, and consumer group management
-          
-          See the [README](https://github.com/KLogicHQ/kaf/blob/main/README.md) for complete usage instructions.
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "✅ Found $file_count release files:"
+          ls -la release-files/
+
+          # Extract version from tag for validation
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            echo "❌ No version tag found. Release requires a git tag."
+            exit 1
+          fi
+
+          # Verify all expected platforms are present
+          expected_files="kaf-$VERSION-linux-amd64.tar.gz kaf-$VERSION-linux-arm64.tar.gz kaf-$VERSION-darwin-amd64.tar.gz kaf-$VERSION-darwin-arm64.tar.gz kaf-$VERSION-windows-amd64.zip"
+          missing_files=""
+
+          for file in $expected_files; do
+            if [ ! -f "release-files/$file" ]; then
+              missing_files="$missing_files $file"
+            fi
+          done
+
+          if [ ! -z "$missing_files" ]; then
+            echo "⚠️  Warning: Missing expected files:$missing_files"
+            echo "Proceeding with available files..."
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-files/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            ## 🚀 kaf - Kafka Productivity CLI ${{ github.ref_name }}
+
+            A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a kubectl-like design philosophy.
+
+            ### 📦 Downloads
+
+            **Linux:**
+            - `kaf-${{ github.ref_name }}-linux-amd64.tar.gz` - Linux x86_64
+            - `kaf-${{ github.ref_name }}-linux-arm64.tar.gz` - Linux ARM64
+
+            **macOS:**
+            - `kaf-${{ github.ref_name }}-darwin-amd64.tar.gz` - macOS Intel
+            - `kaf-${{ github.ref_name }}-darwin-arm64.tar.gz` - macOS Apple Silicon
+
+            **Windows:**
+            - `kaf-${{ github.ref_name }}-windows-amd64.zip` - Windows x86_64
+
+            ### 🛠 Installation
+
+            1. Download the appropriate archive for your platform
+            2. Extract the archive: `tar -xzf kaf-*.tar.gz` (Linux/Mac) or unzip `kaf-*.zip` (Windows)
+            3. Move the `kaf` binary to your PATH
+            4. Run `kaf --help` to get started
+
+            ### 🎯 Key Features
+
+            - Context-aware operations across dev, staging, and prod clusters
+            - Intelligent tab completion for all commands and resources
+            - Real-time configuration fetching using DescribeConfigs API
+            - Multiple output formats (table, JSON, YAML)
+            - Comprehensive topic, broker, and consumer group management
+
+            See the [README](https://github.com/KLogicHQ/kaf/blob/main/README.md) for complete usage instructions.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Test build process on PRs and manual workflow dispatch (without release)
   test-build:
     name: Test Build Process
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'false')
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Install librdkafka
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y librdkafka-dev
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librdkafka-dev
 
-    - name: Test current platform build
-      run: |
-        echo "Testing Go build for current platform..."
-        go mod tidy
-        CGO_ENABLED=1 go build -o kaf-test .
-        
-        # Test that binary works
-        ./kaf-test --help
-        
-        echo "✅ Current platform build successful"
+      - name: Test current platform build
+        run: |
+          echo "Testing Go build for current platform..."
+          go mod tidy
+          CGO_ENABLED=1 go build -o kaf-test .
 
-    - name: Test Docker build for Linux
-      run: |
-        echo "Testing Docker build for Linux amd64..."
-        docker buildx build \
-          --platform linux/amd64 \
-          --target final \
-          --output type=local,dest=./test-output \
-          .
-        
-        # Verify binary was created
-        if [ -f "./test-output/root/kaf" ]; then
-          echo "✅ Docker build successful"
-        else
-          echo "❌ Docker build failed - binary not found"
-          exit 1
-        fi
+          # Test that binary works
+          ./kaf-test --help
 
-    - name: Verify build setup
-      run: |
-        echo "✅ Build environment verified successfully"
+          echo "✅ Current platform build successful"
+
+      - name: Test Docker build for Linux
+        run: |
+          echo "Testing Docker build for Linux amd64..."
+          docker buildx build \
+            --platform linux/amd64 \
+            --target final \
+            --output type=local,dest=./test-output \
+            .
+
+          # Verify binary was created
+          if [ -f "./test-output/root/kaf" ]; then
+            echo "✅ Docker build successful"
+          else
+            echo "❌ Docker build failed - binary not found"
+            exit 1
+          fi
+
+      - name: Verify build setup
+        run: |
+          echo "✅ Build environment verified successfully"
