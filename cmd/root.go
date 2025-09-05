@@ -14,12 +14,37 @@ const version = "1.0.0"
 var (
         outputFormat string
         rootCmd      = &cobra.Command{
-                Use:     "kaf",
+                Use:     "kaf <command> <subcommand> [flags]",
                 Version: version,
                 Short:   "Kafka Productivity CLI - A Unified CLI for Kafka",
                 Long: `kaf is a comprehensive CLI tool for managing Kafka clusters.
 It provides a kubectl-inspired interface for working with topics, consumer groups,
-producers, consumers, and cluster administration.`,
+producers, consumers, and cluster administration.
+
+EXAMPLES
+  $ kaf config add my-cluster --bootstrap kafka.example.com:9092
+  $ kaf topics list
+  $ kaf topics create orders --partitions 3 --replication 2
+  $ kaf produce orders --count 10
+  $ kaf consume orders --from-beginning --limit 5
+  $ kaf groups list
+  $ kaf brokers list
+
+CORE COMMANDS
+  config:        Manage cluster configurations and contexts
+  topics:        Manage Kafka topics (create, list, describe, delete)
+  groups:        Manage consumer groups and offsets
+  produce:       Produce messages to topics
+  consume:       Consume messages from topics
+  brokers:       Inspect and manage Kafka brokers
+  offsets:       View and manage topic/partition offsets
+  health:        Check cluster health and connectivity
+  util:          Utility commands for cluster administration
+
+CONTEXT COMMANDS
+  config current-context:    Display the current context
+  config use-context:        Switch to a different cluster context
+  config get-contexts:       List all configured contexts`,
                 SilenceUsage: true,
         }
 )
