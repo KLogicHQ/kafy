@@ -24,7 +24,7 @@ producers, consumers, and cluster administration.
 Usage:
   kaf [command] [subcommand] [flags] [options]
 
-CORE COMMANDS
+**CORE COMMANDS**
   config        Manage cluster configurations and contexts
   topics        Manage Kafka topics (create, list, describe, delete)
   groups        Manage consumer groups and offsets
@@ -35,12 +35,12 @@ CORE COMMANDS
   health        Check cluster health and connectivity
   util          Utility commands for cluster administration
 
-ADDITIONAL COMMANDS
+**ADDITIONAL COMMANDS**
   completion    Generate the autocompletion script for the specified shell
   help          Help about any command
   version       Show version information
 
-EXAMPLES
+**EXAMPLES**
   $ kaf config add my-cluster --bootstrap kafka.example.com:9092
   $ kaf topics list
   $ kaf topics create orders --partitions 3 --replication 2
@@ -69,9 +69,6 @@ func init() {
 
 Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
-
-Global Flags:
-{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}
 
 Use "{{.CommandPath}} [command] --help" for more information about a command.
 `)
