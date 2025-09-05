@@ -173,6 +173,10 @@ jobs:
           # Build binary
           CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kaf-darwin-${{ matrix.arch }} .
 
+          # Sign and fix permissions for macOS
+          codesign --force --deep --sign - release/kaf-darwin-${{ matrix.arch }}
+          xattr -cr release/kaf-darwin-${{ matrix.arch }}
+
           # Create package
           PACKAGE_NAME="kaf-$VERSION-darwin-${{ matrix.arch }}"
           mkdir -p "release/$PACKAGE_NAME"
