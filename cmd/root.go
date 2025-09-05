@@ -21,6 +21,9 @@ var (
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.
 
+Usage:
+  kaf [command] [subcommand] [flags] [options]
+
 CORE COMMANDS
   config        Manage cluster configurations and contexts
   topics        Manage Kafka topics (create, list, describe, delete)
