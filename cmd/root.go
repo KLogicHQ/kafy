@@ -21,14 +21,8 @@ var (
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.
 
-EXAMPLES
-  $ kaf config add my-cluster --bootstrap kafka.example.com:9092
-  $ kaf topics list
-  $ kaf topics create orders --partitions 3 --replication 2
-  $ kaf produce orders --count 10
-  $ kaf consume orders --from-beginning --limit 5
-  $ kaf groups list
-  $ kaf brokers list
+Usage:
+  kaf [command] [subcommand] [flags] [options]
 
 CORE COMMANDS
   config:        Manage cluster configurations and contexts
@@ -44,7 +38,16 @@ CORE COMMANDS
 CONTEXT COMMANDS
   config current-context:    Display the current context
   config use-context:        Switch to a different cluster context
-  config get-contexts:       List all configured contexts`,
+  config get-contexts:       List all configured contexts
+
+EXAMPLES
+  $ kaf config add my-cluster --bootstrap kafka.example.com:9092
+  $ kaf topics list
+  $ kaf topics create orders --partitions 3 --replication 2
+  $ kaf produce orders --count 10
+  $ kaf consume orders --from-beginning --limit 5
+  $ kaf groups list
+  $ kaf brokers list`,
                 SilenceUsage: true,
         }
 )
