@@ -83,7 +83,7 @@ kaf completion powershell | Out-String | Invoke-Expression
 ### What Gets Auto-Completed
 
 - **Topics**: `kaf topics describe <TAB>` → Shows available topics
-- **Consumer Groups**: `kaf groups describe <TAB>` → Shows active groups  
+- **Consumer Groups**: `kaf groups describe <TAB>` → Shows active groups
 - **Brokers**: `kaf brokers describe <TAB>` → Shows broker IDs
 - **Clusters**: `kaf config use <TAB>` → Shows configured clusters
 - **Flags**: `--output <TAB>` → Shows table, json, yaml options
@@ -221,7 +221,7 @@ kaf consume orders --output json --limit 5
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf offsets show <topic>` | Show partition offsets for topic | `kaf offsets show orders` (fixed group.id error) |
+| `kaf offsets show <topic>` | Show partition offsets for topic | `kaf offsets show orders` |
 | `kaf offsets reset <topic>` | Reset partition offsets | `kaf offsets reset orders --to-earliest` |
 
 ### Broker Management
@@ -237,7 +237,7 @@ kaf consume orders --output json --limit 5
 | Command | Description | Examples |
 |---------|-------------|----------|
 | `kaf brokers configs list` | List configurations for all brokers | Shows 45+ comprehensive settings per broker |
-| `kaf brokers configs get <broker-id>` | Show specific broker config | `kaf brokers configs get 1` (returns same 45+ configs) |
+| `kaf brokers configs get <broker-id>` | Show specific broker config | `kaf brokers configs get 1` |
 | `kaf brokers configs set <broker-id> <key>=<value>` | Update broker config | `kaf brokers configs set 1 log.retention.hours=72` |
 
 ### Health & Monitoring
@@ -385,7 +385,7 @@ if kaf topics describe user-events --output json > /dev/null 2>&1; then
 else
     echo "Creating topic..."
     kaf topics create user-events --partitions 6 --replication 3
-    
+
     # Configure the topic
     kaf topics config set user-events retention.ms=86400000
     kaf topics config set user-events cleanup.policy=delete
@@ -416,10 +416,10 @@ kaf topics configs delete orders cleanup.policy
 ### Broker Configuration Management
 
 ```bash
-# List all broker configurations (shows 45+ comprehensive settings)
+# List all broker configurations
 kaf brokers configs list
 
-# View specific broker configuration (consistent with list - shows same 45+ configs)
+# View specific broker configuration
 kaf brokers configs get 1
 
 # Update broker settings
