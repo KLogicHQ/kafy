@@ -11,7 +11,6 @@ mkdir -p $OUTPUT_DIR
 mkdir -p $DIST_DIR
 
 echo "Building kaf $VERSION for multiple platforms..."
-echo "Note: Cross-compilation requires librdkafka to be available for each target platform"
 
 # Function to create archive packages
 create_package() {
@@ -54,49 +53,115 @@ create_package() {
         
         # Clean up temporary package directory
         rm -rf "$package_dir"
+        
+        echo "✅ Package created: $package_name"
+    else
+        echo "❌ Binary not found for $os-$arch, skipping package creation"
     fi
 }
 
-# Build for current platform with CGO enabled (should always work)
-echo "Building for current platform..."
-CGO_ENABLED=1 go build -o $OUTPUT_DIR/kaf-$(go env GOOS)-$(go env GOARCH)$([ "$(go env GOOS)" = "windows" ] && echo ".exe" || echo "")
-
-# For cross-compilation, we need to build using Docker or use static linking
-echo "Attempting cross-compilation..."
-
-# Linux AMD64
-echo "Building for Linux AMD64..."
-CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o $OUTPUT_DIR/kaf-linux-amd64 2>/dev/null || {
-    echo "Warning: Linux AMD64 build failed - librdkafka not available for cross-compilation"
+# Function to build using Docker (for Linux targets)
+build_with_docker() {
+    local arch=$1
+    local platform="linux/$arch"
+    
+    echo "Building for Linux $arch using Docker..."
+    
+    if command -v docker >/dev/null 2>&1; then
+        if docker buildx build \
+            --platform "$platform" \
+            --output type=local,dest="$OUTPUT_DIR/docker-out-$arch" \
+            --target final \
+            . 2>/dev/null; then
+            
+            # Extract binary from Docker output
+            if [ -f "$OUTPUT_DIR/docker-out-$arch/root/kaf" ]; then
+                cp "$OUTPUT_DIR/docker-out-$arch/root/kaf" "$OUTPUT_DIR/kaf-linux-$arch"
+                rm -rf "$OUTPUT_DIR/docker-out-$arch"
+                echo "✅ Linux $arch build successful via Docker"
+                return 0
+            fi
+        fi
+    fi
+    
+    echo "❌ Linux $arch build failed - Docker not available or build failed"
+    return 1
 }
 
-# Linux ARM64
-echo "Building for Linux ARM64..."
-CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -o $OUTPUT_DIR/kaf-linux-arm64 2>/dev/null || {
-    echo "Warning: Linux ARM64 build failed - librdkafka not available for cross-compilation"
-}
-
-# macOS builds
-echo "Building for macOS AMD64..."
-CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o $OUTPUT_DIR/kaf-darwin-amd64 2>/dev/null || {
-    echo "Warning: macOS AMD64 build failed - librdkafka not available for cross-compilation"
-}
-
-echo "Building for macOS ARM64..."
-CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -o $OUTPUT_DIR/kaf-darwin-arm64 2>/dev/null || {
-    echo "Warning: macOS ARM64 build failed - librdkafka not available for cross-compilation"
-}
-
-# Windows builds
-echo "Building for Windows AMD64..."
-CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -o $OUTPUT_DIR/kaf-windows-amd64.exe 2>/dev/null || {
-    echo "Warning: Windows AMD64 build failed - librdkafka not available for cross-compilation"
+# Function for native build attempts
+try_native_build() {
+    local os=$1
+    local arch=$2
+    local output_name="$OUTPUT_DIR/kaf-$os-$arch"
+    
+    if [ "$os" = "windows" ]; then
+        output_name="$output_name.exe"
+    fi
+    
+    echo "Attempting native build for $os $arch..."
+    
+    if CGO_ENABLED=1 GOOS="$os" GOARCH="$arch" go build -o "$output_name" . 2>/dev/null; then
+        echo "✅ $os $arch build successful (native)"
+        return 0
+    else
+        echo "❌ $os $arch build failed (native)"
+        return 1
+    fi
 }
 
 echo ""
-echo "Creating distribution packages..."
+echo "=== Building for current platform ==="
+current_os=$(go env GOOS)
+current_arch=$(go env GOARCH)
+current_ext=""
+if [ "$current_os" = "windows" ]; then
+    current_ext=".exe"
+fi
 
-# Create packages for each successful build
+if CGO_ENABLED=1 go build -o "$OUTPUT_DIR/kaf-$current_os-$current_arch$current_ext" .; then
+    echo "✅ Current platform ($current_os-$current_arch) build successful"
+else
+    echo "❌ Current platform build failed"
+    exit 1
+fi
+
+echo ""
+echo "=== Cross-compilation attempts ==="
+
+# Track build results
+declare -A build_results
+
+# Try Linux builds with Docker first, fallback to native
+for arch in "amd64" "arm64"; do
+    if build_with_docker "$arch"; then
+        build_results["linux-$arch"]="success"
+    elif try_native_build "linux" "$arch"; then
+        build_results["linux-$arch"]="success"
+    else
+        build_results["linux-$arch"]="failed"
+    fi
+done
+
+# Try macOS builds (native only)
+for arch in "amd64" "arm64"; do
+    if try_native_build "darwin" "$arch"; then
+        build_results["darwin-$arch"]="success"
+    else
+        build_results["darwin-$arch"]="failed"
+    fi
+done
+
+# Try Windows build (native only)
+if try_native_build "windows" "amd64"; then
+    build_results["windows-amd64"]="success"
+else
+    build_results["windows-amd64"]="failed"
+fi
+
+echo ""
+echo "=== Creating distribution packages ==="
+
+# Create packages for successful builds
 create_package "linux" "amd64" ""
 create_package "linux" "arm64" ""
 create_package "darwin" "amd64" ""
@@ -104,13 +169,50 @@ create_package "darwin" "arm64" ""
 create_package "windows" "amd64" ".exe"
 
 echo ""
-echo "Build completed! Available packages:"
-ls -la $DIST_DIR/ 2>/dev/null || echo "No packages were created"
+echo "=== Build Summary ==="
+echo "Version: $VERSION"
+
+success_count=0
+total_count=0
+
+echo ""
+echo "Build Results:"
+for target in "${!build_results[@]}"; do
+    result="${build_results[$target]}"
+    total_count=$((total_count + 1))
+    if [ "$result" = "success" ]; then
+        echo "  ✅ $target"
+        success_count=$((success_count + 1))
+    else
+        echo "  ❌ $target"
+    fi
+done
+
+echo ""
+echo "Success rate: $success_count/$total_count targets"
+
+echo ""
+echo "Distribution packages:"
+if [ -d "$DIST_DIR" ] && [ "$(ls -A $DIST_DIR 2>/dev/null)" ]; then
+    ls -la "$DIST_DIR/"
+else
+    echo "  No packages were created"
+fi
 
 echo ""
 echo "Raw binaries:"
-ls -la $OUTPUT_DIR/kaf-* 2>/dev/null || echo "No binaries were created"
+if ls "$OUTPUT_DIR"/kaf-* 1> /dev/null 2>&1; then
+    ls -la "$OUTPUT_DIR"/kaf-*
+else
+    echo "  No binaries were created"
+fi
+
+# Exit with error if no builds succeeded
+if [ $success_count -eq 0 ]; then
+    echo ""
+    echo "❌ All builds failed!"
+    exit 1
+fi
 
 echo ""
-echo "Version: $VERSION"
 echo "Distribution packages saved to: $DIST_DIR/"

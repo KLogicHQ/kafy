@@ -12,9 +12,66 @@ env:
   GO_VERSION: '1.21'
 
 jobs:
-  build:
-    name: Build Cross-Platform Binaries
+  # Linux builds using Docker buildx
+  build-linux:
+    name: Build Linux Binaries
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Linux ${{ matrix.arch }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/${{ matrix.arch }}
+        target: final
+        outputs: type=local,dest=./release/docker-out-${{ matrix.arch }}
+
+    - name: Extract binary and create package
+      run: |
+        mkdir -p release/dist
+        VERSION="v1.0.0"
+        
+        # Copy binary to expected location
+        cp "./release/docker-out-${{ matrix.arch }}/root/kaf" "release/kaf-linux-${{ matrix.arch }}"
+        
+        # Create package
+        PACKAGE_NAME="kaf-$VERSION-linux-${{ matrix.arch }}"
+        mkdir -p "release/$PACKAGE_NAME"
+        cp "release/kaf-linux-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
+        cp README.md LICENSE "release/$PACKAGE_NAME/" || true
+        
+        # Create tar.gz
+        cd release
+        tar -czf "dist/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+        cd ..
+        
+        echo "✅ Linux ${{ matrix.arch }} package created"
+
+    - name: Upload Linux ${{ matrix.arch }} artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: kaf-linux-${{ matrix.arch }}
+        path: |
+          release/kaf-linux-${{ matrix.arch }}
+          release/dist/kaf-*-linux-${{ matrix.arch }}.tar.gz
+        retention-days: 30
+
+  # macOS builds using native runners
+  build-macos:
+    name: Build macOS Binaries
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     
     steps:
     - name: Checkout code
@@ -25,10 +82,9 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
 
-    - name: Install librdkafka development libraries
+    - name: Install librdkafka
       run: |
-        sudo apt-get update
-        sudo apt-get install -y librdkafka-dev
+        brew install librdkafka
 
     - name: Cache Go modules
       uses: actions/cache@v3
@@ -40,32 +96,138 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Install cross-compilation dependencies
+    - name: Build macOS ${{ matrix.arch }}
       run: |
-        # Install additional cross-compilation tools if needed
-        sudo apt-get install -y gcc-aarch64-linux-gnu gcc-mingw-w64
+        mkdir -p release/dist
+        VERSION="v1.0.0"
         
-    - name: Make build script executable
-      run: chmod +x build.sh
+        # Build binary
+        CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kaf-darwin-${{ matrix.arch }} .
+        
+        # Create package
+        PACKAGE_NAME="kaf-$VERSION-darwin-${{ matrix.arch }}"
+        mkdir -p "release/$PACKAGE_NAME"
+        cp "release/kaf-darwin-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
+        cp README.md LICENSE "release/$PACKAGE_NAME/" || true
+        
+        # Create tar.gz
+        cd release
+        tar -czf "dist/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+        cd ..
+        
+        echo "✅ macOS ${{ matrix.arch }} package created"
 
-    - name: Run build script
-      run: ./build.sh
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+    - name: Upload macOS ${{ matrix.arch }} artifacts
+      uses: actions/upload-artifact@v4
       with:
-        name: kaf-binaries-${{ github.sha }}
+        name: kaf-darwin-${{ matrix.arch }}
         path: |
-          release/dist/*
-          release/kaf-*
+          release/kaf-darwin-${{ matrix.arch }}
+          release/dist/kaf-*-darwin-${{ matrix.arch }}.tar.gz
         retention-days: 30
 
-    - name: Create GitHub Release (on tag push)
-      if: startsWith(github.ref, 'refs/tags/')
+  # Windows builds using native runners
+  build-windows:
+    name: Build Windows Binaries
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Install librdkafka (Windows)
+      run: |
+        # Install vcpkg and librdkafka
+        git clone https://github.com/Microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg install librdkafka:x64-windows
+        
+        # Set environment variables for Go build
+        echo "CGO_CPPFLAGS=-I$(pwd)\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
+        echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkafka" >> $env:GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$(pwd)\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
+      shell: powershell
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~\AppData\Local\go-build
+          ~\go\pkg\mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Build Windows amd64
+      run: |
+        mkdir -p release/dist
+        $VERSION = "v1.0.0"
+        
+        # Build binary
+        $env:CGO_ENABLED = "1"
+        $env:GOOS = "windows"
+        $env:GOARCH = "amd64"
+        go build -o release/kaf-windows-amd64.exe .
+        
+        # Create package
+        $PACKAGE_NAME = "kaf-$VERSION-windows-amd64"
+        mkdir "release/$PACKAGE_NAME"
+        cp "release/kaf-windows-amd64.exe" "release/$PACKAGE_NAME/kaf.exe"
+        cp README.md "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
+        cp LICENSE "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
+        
+        # Create zip
+        Compress-Archive -Path "release/$PACKAGE_NAME" -DestinationPath "release/dist/$PACKAGE_NAME.zip"
+        
+        Write-Host "✅ Windows amd64 package created"
+      shell: powershell
+
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: kaf-windows-amd64
+        path: |
+          release/kaf-windows-amd64.exe
+          release/dist/kaf-*-windows-amd64.zip
+        retention-days: 30
+
+  # Create GitHub release (only on tag push)
+  release:
+    name: Create Release
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+
+    - name: Organize release files
+      run: |
+        mkdir -p release-files
+        
+        # Copy all distribution packages
+        find artifacts/ -name "*.tar.gz" -exec cp {} release-files/ \;
+        find artifacts/ -name "*.zip" -exec cp {} release-files/ \;
+        
+        # List what we have
+        echo "Release files:"
+        ls -la release-files/
+
+    - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          release/dist/*
+        files: release-files/*
         draft: false
         prerelease: false
         generate_release_notes: true
@@ -106,8 +268,9 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Test build process on PRs
   test-build:
-    name: Test Build Script
+    name: Test Build Process
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     
@@ -120,7 +283,10 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
 
-    - name: Install librdkafka development libraries
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Install librdkafka
       run: |
         sudo apt-get update
         sudo apt-get install -y librdkafka-dev
@@ -130,7 +296,7 @@ jobs:
         chmod +x build.sh
         ./build.sh
         
-    - name: Verify packages were created
+    - name: Verify builds
       run: |
         echo "Checking for distribution packages..."
         ls -la release/dist/ || echo "No dist directory found"
