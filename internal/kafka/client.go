@@ -69,6 +69,16 @@ func (c *Client) CreateConsumer(groupID string) (*kafka.Consumer, error) {
         return kafka.NewConsumer(&configMap)
 }
 
+func (c *Client) CreateConsumerWithOffset(groupID string, offsetReset string) (*kafka.Consumer, error) {
+        configMap := c.GetKafkaConfig()
+        if groupID != "" {
+                configMap["group.id"] = groupID
+        }
+        configMap["auto.offset.reset"] = offsetReset
+        
+        return kafka.NewConsumer(&configMap)
+}
+
 type TopicInfo struct {
         Name       string
         Partitions int

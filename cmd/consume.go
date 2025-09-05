@@ -23,8 +23,14 @@ var consumeCmd = &cobra.Command{
                 topicName := args[0]
                 group, _ := cmd.Flags().GetString("group")
                 fromBeginning, _ := cmd.Flags().GetBool("from-beginning")
+                fromLatest, _ := cmd.Flags().GetBool("from-latest")
                 limit, _ := cmd.Flags().GetInt("limit")
                 output, _ := cmd.Flags().GetString("output")
+                
+                // Validate conflicting flags
+                if fromBeginning && fromLatest {
+                        return fmt.Errorf("cannot use both --from-beginning and --from-latest flags")
+                }
                 
                 cfg, err := config.LoadConfig()
                 if err != nil {
@@ -41,16 +47,21 @@ var consumeCmd = &cobra.Command{
                         group = fmt.Sprintf("kaf-consumer-%d", time.Now().Unix())
                 }
 
-                consumer, err := client.CreateConsumer(group)
+                // Create consumer with appropriate offset configuration
+                var offsetReset string
+                if fromBeginning {
+                        offsetReset = "earliest"
+                } else if fromLatest {
+                        offsetReset = "latest"
+                } else {
+                        offsetReset = "earliest" // default
+                }
+                
+                consumer, err := client.CreateConsumerWithOffset(group, offsetReset)
                 if err != nil {
                         return err
                 }
                 defer consumer.Close()
-
-                // Configure auto offset reset
-                if fromBeginning {
-                        // This is handled in the consumer config
-                }
 
                 // Subscribe to topic
                 err = consumer.SubscribeTopics([]string{topicName}, nil)
@@ -136,6 +147,7 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
 func init() {
         consumeCmd.Flags().String("group", "", "Consumer group ID (auto-generated if not provided)")
         consumeCmd.Flags().Bool("from-beginning", false, "Start from beginning")
+        consumeCmd.Flags().Bool("from-latest", false, "Start from latest messages")
         consumeCmd.Flags().Int("limit", 0, "Limit number of messages (0 = unlimited)")
         consumeCmd.Flags().String("output", "table", "Output format (table, json, yaml)")
 }
