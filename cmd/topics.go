@@ -210,9 +210,9 @@ var topicsConfigsCmd = &cobra.Command{
 }
 
 var topicsConfigsListCmd = &cobra.Command{
-        Use:   "list [topic]",
-        Short: "List topic configurations",
-        Args:  cobra.MaximumNArgs(1),
+        Use:   "list",
+        Short: "List configurations for all topics",
+        Args:  cobra.NoArgs,
         RunE: func(cmd *cobra.Command, args []string) error {
                 cfg, err := config.LoadConfig()
                 if err != nil {
@@ -224,18 +224,47 @@ var topicsConfigsListCmd = &cobra.Command{
                         return err
                 }
 
-                var topicName string
-                if len(args) > 0 {
-                        topicName = args[0]
-                }
-
-                configs, err := client.GetTopicConfig(topicName)
+                // Get all topics first
+                topics, err := client.ListTopics()
                 if err != nil {
                         return err
                 }
 
                 formatter := getFormatter()
-                return formatter.Output(configs)
+                
+                if outputFormat == "table" {
+                        // For table output, show all topic configs in a structured format
+                        headers := []string{"Topic", "Config Key", "Value"}
+                        var rows [][]string
+                        
+                        for _, topic := range topics {
+                                configs, err := client.GetTopicConfig(topic.Name)
+                                if err != nil {
+                                        continue // Skip topics we can't access
+                                }
+                                
+                                // configs is map[string]string from the client method
+                                for key, value := range configs {
+                                        rows = append(rows, []string{topic.Name, key, value})
+                                }
+                        }
+                        
+                        formatter.OutputTable(headers, rows)
+                        return nil
+                } else {
+                        // For JSON/YAML, collect all configs in structured format
+                        allConfigs := make(map[string]interface{})
+                        
+                        for _, topic := range topics {
+                                configs, err := client.GetTopicConfig(topic.Name)
+                                if err != nil {
+                                        continue // Skip topics we can't access
+                                }
+                                allConfigs[topic.Name] = configs
+                        }
+                        
+                        return formatter.Output(allConfigs)
+                }
         },
 }
 
