@@ -25,17 +25,52 @@ ARG TARGETPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
-# Install librdkafka for the target architecture
-RUN apt-get update && apt-get install -y \
-    librdkafka-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install cross-compilation tools and librdkafka for the target architecture
+RUN case ${TARGETARCH} in \
+    "amd64") \
+        apt-get update && apt-get install -y \
+            librdkafka-dev \
+            gcc \
+            && rm -rf /var/lib/apt/lists/* \
+        ;; \
+    "arm64") \
+        apt-get update && apt-get install -y \
+            librdkafka-dev \
+            gcc-aarch64-linux-gnu \
+            libc6-dev-arm64-cross \
+            && rm -rf /var/lib/apt/lists/* \
+        ;; \
+    *) \
+        echo "Unsupported architecture: ${TARGETARCH}" && exit 1 \
+        ;; \
+    esac
+
+# Set up cross-compilation environment for ARM64
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        ln -s /usr/aarch64-linux-gnu/lib/librdkafka.so.1 /usr/lib/aarch64-linux-gnu/librdkafka.so.1 || true; \
+        export CC=aarch64-linux-gnu-gcc; \
+        export CXX=aarch64-linux-gnu-g++; \
+        export AR=aarch64-linux-gnu-ar; \
+        export STRIP=aarch64-linux-gnu-strip; \
+        export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig; \
+    fi
 
 # Build the binary
 ENV CGO_ENABLED=1
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 
-RUN go build -o kaf .
+# Set cross-compilation environment variables for ARM64
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        export CC=aarch64-linux-gnu-gcc && \
+        export CXX=aarch64-linux-gnu-g++ && \
+        export AR=aarch64-linux-gnu-ar && \
+        export STRIP=aarch64-linux-gnu-strip && \
+        export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig && \
+        go build -o kaf .; \
+    else \
+        go build -o kaf .; \
+    fi
 
 # Final minimal image
 FROM ubuntu:22.04 AS final
