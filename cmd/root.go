@@ -21,33 +21,34 @@ var (
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.
 
-Usage:
-  kaf [command] [subcommand] [flags] [options]
+`,
+// Usage:
+//   kaf [command] [subcommand] [flags] [options]
 
-CORE COMMANDS:
-  config        Manage cluster configurations and contexts
-  topics        Manage Kafka topics (create, list, describe, delete)
-  groups        Manage consumer groups and offsets
-  produce       Produce messages to topics
-  consume       Consume messages from topics
-  brokers       Inspect and manage Kafka brokers
-  offsets       View and manage topic/partition offsets
-  health        Check cluster health and connectivity
-  util          Utility commands for cluster administration
+// CORE COMMANDS:
+//   config        Manage cluster configurations and contexts
+//   topics        Manage Kafka topics (create, list, describe, delete)
+//   groups        Manage consumer groups and offsets
+//   produce       Produce messages to topics
+//   consume       Consume messages from topics
+//   brokers       Inspect and manage Kafka brokers
+//   offsets       View and manage topic/partition offsets
+//   health        Check cluster health and connectivity
+//   util          Utility commands for cluster administration
 
-ADDITIONAL COMMANDS:
-  completion    Generate the autocompletion script for the specified shell
-  help          Help about any command
-  version       Show version information
+// ADDITIONAL COMMANDS:
+//   completion    Generate the autocompletion script for the specified shell
+//   help          Help about any command
+//   version       Show version information
 
-EXAMPLES:
-  $ kaf config add my-cluster --bootstrap kafka.example.com:9092
-  $ kaf topics list
-  $ kaf topics create orders --partitions 3 --replication 2
-  $ kaf produce orders --count 10
-  $ kaf consume orders --from-beginning --limit 5
-  $ kaf groups list
-  $ kaf brokers list`,
+// EXAMPLES:
+//   $ kaf config add my-cluster --bootstrap kafka.example.com:9092
+//   $ kaf topics list
+//   $ kaf topics create orders --partitions 3 --replication 2
+//   $ kaf produce orders --count 10
+//   $ kaf consume orders --from-beginning --limit 5
+//   $ kaf groups list
+//   $ kaf brokers list`,
                 SilenceUsage: true,
         }
 )
