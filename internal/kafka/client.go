@@ -3,6 +3,7 @@ package kafka
 import (
         "context"
         "fmt"
+        "strconv"
         "time"
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -343,16 +344,37 @@ func (c *Client) GetTopicConfig(topicName string) (map[string]string, error) {
         }
         defer adminClient.Close()
 
-        // For now, return sample config - full implementation would use DescribeConfigs
-        configs := map[string]string{
-                "cleanup.policy":          "delete",
-                "retention.ms":            "604800000",
-                "segment.ms":              "604800000",
-                "compression.type":        "producer",
-                "max.message.bytes":       "1000012",
-                "min.insync.replicas":     "1",
+        // Use DescribeConfigs API to get real topic configurations
+        ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+        defer cancel()
+
+        resources := []kafka.ConfigResource{
+                {
+                        Type: kafka.ResourceTopic,
+                        Name: topicName,
+                },
         }
-        
+
+        results, err := adminClient.DescribeConfigs(ctx, resources, kafka.SetAdminRequestTimeout(20*time.Second))
+        if err != nil {
+                return nil, fmt.Errorf("failed to describe configs for topic %s: %w", topicName, err)
+        }
+
+        if len(results) == 0 {
+                return nil, fmt.Errorf("no configuration results returned for topic %s", topicName)
+        }
+
+        result := results[0]
+        if result.Error.Code() != kafka.ErrNoError {
+                return nil, fmt.Errorf("error describing topic %s: %s", topicName, result.Error)
+        }
+
+        // Convert ConfigEntry map to simple string map
+        configs := make(map[string]string)
+        for configName, configEntry := range result.Config {
+                configs[configName] = configEntry.Value
+        }
+
         return configs, nil
 }
 
@@ -386,121 +408,60 @@ func (c *Client) ListBrokerConfigs() (map[string]map[string]string, error) {
         }
         defer adminClient.Close()
 
-        // Return comprehensive broker configs showing all available configurations
-        brokers := map[string]map[string]string{
-                "1": {
-                        "num.network.threads":                    "8",
-                        "num.io.threads":                        "8", 
-                        "socket.send.buffer.bytes":              "102400",
-                        "socket.receive.buffer.bytes":           "102400",
-                        "log.retention.hours":                   "168",
-                        "log.segment.bytes":                     "1073741824",
-                        "log.retention.bytes":                   "-1",
-                        "log.retention.check.interval.ms":       "300000",
-                        "log.segment.delete.delay.ms":           "60000",
-                        "log.flush.interval.messages":           "9223372036854775807",
-                        "log.flush.interval.ms":                 "null",
-                        "log.roll.hours":                        "168",
-                        "log.roll.jitter.hours":                 "0",
-                        "log.index.size.max.bytes":              "10485760",
-                        "log.index.interval.bytes":              "4096",
-                        "log.cleanup.policy":                    "delete",
-                        "log.cleaner.threads":                   "1",
-                        "log.cleaner.io.max.bytes.per.second":   "1.7976931348623157E308",
-                        "log.cleaner.dedupe.buffer.size":        "134217728",
-                        "log.cleaner.io.buffer.size":            "524288",
-                        "log.cleaner.io.buffer.load.factor":     "0.9",
-                        "log.cleaner.backoff.ms":                "15000",
-                        "log.cleaner.min.cleanable.ratio":       "0.5",
-                        "log.cleaner.enable":                    "true",
-                        "log.cleaner.delete.retention.ms":       "86400000",
-                        "log.message.timestamp.type":            "CreateTime",
-                        "log.message.timestamp.difference.max.ms": "9223372036854775807",
-                        "log.message.downconversion.enable":     "true",
-                        "num.partitions":                        "1",
-                        "default.replication.factor":            "1",
-                        "replica.lag.time.max.ms":               "30000",
-                        "replica.socket.timeout.ms":             "30000",
-                        "replica.socket.receive.buffer.bytes":   "65536",
-                        "replica.fetch.max.bytes":               "1048576",
-                        "replica.fetch.wait.max.ms":             "500",
-                        "replica.fetch.min.bytes":               "1",
-                        "replica.fetch.response.max.bytes":      "10485760",
-                        "num.replica.fetchers":                  "1",
-                        "replica.high.watermark.checkpoint.interval.ms": "5000",
-                        "fetch.purgatory.purge.interval.requests": "1000",
-                        "producer.purgatory.purge.interval.requests": "1000",
-                        "delete.records.purgatory.purge.interval.requests": "1",
-                        "auto.create.topics.enable":             "true",
-                        "min.insync.replicas":                   "1",
-                        "max.connections.per.ip":                "2147483647",
-                        "max.connections.per.ip.overrides":      "",
-                        "connections.max.idle.ms":               "600000",
-                        "request.timeout.ms":                    "30000",
-                        "group.initial.rebalance.delay.ms":      "3000",
-                        "group.max.session.timeout.ms":          "1800000",
-                        "group.min.session.timeout.ms":          "6000",
-                        "inter.broker.protocol.version":         "3.0-IV1",
-                        "log.message.format.version":            "3.0-IV1",
-                },
-                "2": {
-                        "num.network.threads":                    "8",
-                        "num.io.threads":                        "8", 
-                        "socket.send.buffer.bytes":              "102400",
-                        "socket.receive.buffer.bytes":           "102400",
-                        "log.retention.hours":                   "168",
-                        "log.segment.bytes":                     "1073741824",
-                        "log.retention.bytes":                   "-1",
-                        "log.retention.check.interval.ms":       "300000",
-                        "log.segment.delete.delay.ms":           "60000",
-                        "log.flush.interval.messages":           "9223372036854775807",
-                        "log.flush.interval.ms":                 "null",
-                        "log.roll.hours":                        "168",
-                        "log.roll.jitter.hours":                 "0",
-                        "log.index.size.max.bytes":              "10485760",
-                        "log.index.interval.bytes":              "4096",
-                        "log.cleanup.policy":                    "delete",
-                        "log.cleaner.threads":                   "1",
-                        "log.cleaner.io.max.bytes.per.second":   "1.7976931348623157E308",
-                        "log.cleaner.dedupe.buffer.size":        "134217728",
-                        "log.cleaner.io.buffer.size":            "524288",
-                        "log.cleaner.io.buffer.load.factor":     "0.9",
-                        "log.cleaner.backoff.ms":                "15000",
-                        "log.cleaner.min.cleanable.ratio":       "0.5",
-                        "log.cleaner.enable":                    "true",
-                        "log.cleaner.delete.retention.ms":       "86400000",
-                        "log.message.timestamp.type":            "CreateTime",
-                        "log.message.timestamp.difference.max.ms": "9223372036854775807",
-                        "log.message.downconversion.enable":     "true",
-                        "num.partitions":                        "1",
-                        "default.replication.factor":            "1",
-                        "replica.lag.time.max.ms":               "30000",
-                        "replica.socket.timeout.ms":             "30000",
-                        "replica.socket.receive.buffer.bytes":   "65536",
-                        "replica.fetch.max.bytes":               "1048576",
-                        "replica.fetch.wait.max.ms":             "500",
-                        "replica.fetch.min.bytes":               "1",
-                        "replica.fetch.response.max.bytes":      "10485760",
-                        "num.replica.fetchers":                  "1",
-                        "replica.high.watermark.checkpoint.interval.ms": "5000",
-                        "fetch.purgatory.purge.interval.requests": "1000",
-                        "producer.purgatory.purge.interval.requests": "1000",
-                        "delete.records.purgatory.purge.interval.requests": "1",
-                        "auto.create.topics.enable":             "true",
-                        "min.insync.replicas":                   "1",
-                        "max.connections.per.ip":                "2147483647",
-                        "max.connections.per.ip.overrides":      "",
-                        "connections.max.idle.ms":               "600000",
-                        "request.timeout.ms":                    "30000",
-                        "group.initial.rebalance.delay.ms":      "3000",
-                        "group.max.session.timeout.ms":          "1800000",
-                        "group.min.session.timeout.ms":          "6000",
-                        "inter.broker.protocol.version":         "3.0-IV1",
-                        "log.message.format.version":            "3.0-IV1",
-                },
+        // First get list of available brokers
+        brokersList, err := c.ListBrokers()
+        if err != nil {
+                return nil, fmt.Errorf("failed to get broker list: %w", err)
         }
+
+        if len(brokersList) == 0 {
+                return make(map[string]map[string]string), nil
+        }
+
+        // Get configurations for all brokers
+        brokerConfigs := make(map[string]map[string]string)
         
-        return brokers, nil
+        for _, broker := range brokersList {
+                brokerID := strconv.Itoa(int(broker.ID))
+                
+                // Use DescribeConfigs API to get real broker configurations
+                ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+                
+                resources := []kafka.ConfigResource{
+                        {
+                                Type: kafka.ResourceBroker,
+                                Name: brokerID,
+                        },
+                }
+
+                results, err := adminClient.DescribeConfigs(ctx, resources, kafka.SetAdminRequestTimeout(20*time.Second))
+                cancel() // Cancel context after use
+                
+                if err != nil {
+                        // Skip brokers we can't access instead of failing completely
+                        continue
+                }
+
+                if len(results) == 0 {
+                        continue
+                }
+
+                result := results[0]
+                if result.Error.Code() != kafka.ErrNoError {
+                        // Skip brokers with errors instead of failing completely
+                        continue
+                }
+
+                // Convert ConfigEntry map to simple string map
+                configs := make(map[string]string)
+                for configName, configEntry := range result.Config {
+                        configs[configName] = configEntry.Value
+                }
+
+                brokerConfigs[brokerID] = configs
+        }
+
+        return brokerConfigs, nil
 }
 
 func (c *Client) GetBrokerConfig(brokerID string) (map[string]string, error) {
@@ -510,63 +471,37 @@ func (c *Client) GetBrokerConfig(brokerID string) (map[string]string, error) {
         }
         defer adminClient.Close()
 
-        // Return comprehensive broker configuration (same as ListBrokerConfigs)
-        configs := map[string]string{
-                "num.network.threads":                    "8",
-                "num.io.threads":                        "8", 
-                "socket.send.buffer.bytes":              "102400",
-                "socket.receive.buffer.bytes":           "102400",
-                "log.retention.hours":                   "168",
-                "log.segment.bytes":                     "1073741824",
-                "log.retention.bytes":                   "-1",
-                "log.retention.check.interval.ms":       "300000",
-                "log.segment.delete.delay.ms":           "60000",
-                "log.flush.interval.messages":           "9223372036854775807",
-                "log.flush.interval.ms":                 "null",
-                "log.roll.hours":                        "168",
-                "log.roll.jitter.hours":                 "0",
-                "log.index.size.max.bytes":              "10485760",
-                "log.index.interval.bytes":              "4096",
-                "log.cleanup.policy":                    "delete",
-                "log.cleaner.threads":                   "1",
-                "log.cleaner.io.max.bytes.per.second":   "1.7976931348623157E308",
-                "log.cleaner.dedupe.buffer.size":        "134217728",
-                "log.cleaner.io.buffer.size":            "524288",
-                "log.cleaner.io.buffer.load.factor":     "0.9",
-                "log.cleaner.backoff.ms":                "15000",
-                "log.cleaner.min.cleanable.ratio":       "0.5",
-                "log.cleaner.enable":                    "true",
-                "log.cleaner.delete.retention.ms":       "86400000",
-                "log.message.timestamp.type":            "CreateTime",
-                "log.message.timestamp.difference.max.ms": "9223372036854775807",
-                "log.message.downconversion.enable":     "true",
-                "num.partitions":                        "1",
-                "default.replication.factor":            "1",
-                "replica.lag.time.max.ms":               "30000",
-                "replica.socket.timeout.ms":             "30000",
-                "replica.socket.receive.buffer.bytes":   "65536",
-                "replica.fetch.max.bytes":               "1048576",
-                "replica.fetch.wait.max.ms":             "500",
-                "replica.fetch.min.bytes":               "1",
-                "replica.fetch.response.max.bytes":      "10485760",
-                "num.replica.fetchers":                  "1",
-                "replica.high.watermark.checkpoint.interval.ms": "5000",
-                "fetch.purgatory.purge.interval.requests": "1000",
-                "producer.purgatory.purge.interval.requests": "1000",
-                "delete.records.purgatory.purge.interval.requests": "1",
-                "auto.create.topics.enable":             "true",
-                "min.insync.replicas":                   "1",
-                "max.connections.per.ip":                "2147483647",
-                "max.connections.per.ip.overrides":      "",
-                "connections.max.idle.ms":               "600000",
-                "request.timeout.ms":                    "30000",
-                "group.initial.rebalance.delay.ms":      "3000",
-                "group.max.session.timeout.ms":          "1800000",
-                "group.min.session.timeout.ms":          "6000",
-                "inter.broker.protocol.version":         "3.0-IV1",
-                "log.message.format.version":            "3.0-IV1",
+        // Use DescribeConfigs API to get real broker configurations
+        ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+        defer cancel()
+
+        resources := []kafka.ConfigResource{
+                {
+                        Type: kafka.ResourceBroker,
+                        Name: brokerID,
+                },
         }
-        
+
+        results, err := adminClient.DescribeConfigs(ctx, resources, kafka.SetAdminRequestTimeout(20*time.Second))
+        if err != nil {
+                return nil, fmt.Errorf("failed to describe configs for broker %s: %w", brokerID, err)
+        }
+
+        if len(results) == 0 {
+                return nil, fmt.Errorf("no configuration results returned for broker %s", brokerID)
+        }
+
+        result := results[0]
+        if result.Error.Code() != kafka.ErrNoError {
+                return nil, fmt.Errorf("error describing broker %s: %s", brokerID, result.Error)
+        }
+
+        // Convert ConfigEntry map to simple string map
+        configs := make(map[string]string)
+        for configName, configEntry := range result.Config {
+                configs[configName] = configEntry.Value
+        }
+
         return configs, nil
 }
 
