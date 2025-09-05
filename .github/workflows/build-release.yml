@@ -70,11 +70,12 @@ jobs:
       id: build
       run: |
         mkdir -p release/dist
-        # Extract version from tag, fallback to 0.0.2 for non-tag builds
+        # Extract version from tag, fail if not a tag build
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           VERSION="${{ github.ref_name }}"
         else
-          VERSION="v0.0.2"
+          echo "❌ No version tag found. This build requires a git tag."
+          exit 1
         fi
         
         # Build using Docker buildx
@@ -161,11 +162,12 @@ jobs:
     - name: Build macOS ${{ matrix.arch }}
       run: |
         mkdir -p release/dist
-        # Extract version from tag, fallback to 0.0.2 for non-tag builds
+        # Extract version from tag, fail if not a tag build
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           VERSION="${{ github.ref_name }}"
         else
-          VERSION="v0.0.2"
+          echo "❌ No version tag found. This build requires a git tag."
+          exit 1
         fi
         
         # Build binary
@@ -235,11 +237,12 @@ jobs:
     - name: Build Windows amd64
       run: |
         mkdir -p release/dist
-        # Extract version from tag, fallback to 0.0.2 for non-tag builds
+        # Extract version from tag, fail if not a tag build
         if ("${{ github.ref }}" -like "refs/tags/*") {
           $VERSION = "${{ github.ref_name }}"
         } else {
-          $VERSION = "v0.0.2"
+          Write-Host "❌ No version tag found. This build requires a git tag."
+          exit 1
         }
         
         # Build binary
@@ -310,7 +313,8 @@ jobs:
         if [[ "${{ github.ref }}" == refs/tags/* ]]; then
           VERSION="${{ github.ref_name }}"
         else
-          VERSION="v0.0.2"
+          echo "❌ No version tag found. Release requires a git tag."
+          exit 1
         fi
         
         # Verify all expected platforms are present
