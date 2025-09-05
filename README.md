@@ -19,6 +19,35 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
 
 ## 🛠 Installation
 
+### Get Binary from Releases
+
+**Recommended for most users** - Download pre-built binaries from the [GitHub Releases](https://github.com/KLogicHQ/kaf/releases) page:
+
+1. **Visit the releases page**: Go to [https://github.com/KLogicHQ/kaf/releases](https://github.com/KLogicHQ/kaf/releases)
+2. **Download for your platform**:
+   - **Linux**: `kaf-v1.0.0-linux-amd64.tar.gz` (x86_64) or `kaf-v1.0.0-linux-arm64.tar.gz` (ARM64)
+   - **macOS**: `kaf-v1.0.0-darwin-amd64.tar.gz` (Intel) or `kaf-v1.0.0-darwin-arm64.tar.gz` (Apple Silicon)
+   - **Windows**: `kaf-v1.0.0-windows-amd64.zip`
+3. **Extract the archive**:
+   ```bash
+   # Linux/macOS
+   tar -xzf kaf-v1.0.0-linux-amd64.tar.gz
+   
+   # Windows (PowerShell)
+   Expand-Archive kaf-v1.0.0-windows-amd64.zip
+   ```
+4. **Move to PATH** (optional but recommended):
+   ```bash
+   # Linux/macOS
+   sudo mv kaf /usr/local/bin/
+   
+   # Windows: Add the extracted folder to your PATH environment variable
+   ```
+5. **Verify installation**:
+   ```bash
+   kaf --help
+   ```
+
 ### Build from Source
 
 ```bash
