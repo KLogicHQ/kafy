@@ -1,12 +1,13 @@
 # Multi-stage Dockerfile for cross-platform kaf builds
-FROM --platform=$BUILDPLATFORM golang:1.21-alpine AS base
+FROM --platform=$BUILDPLATFORM golang:1.21 AS base
 
 # Install build dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
     gcc \
-    musl-dev \
-    pkgconfig
+    build-essential \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -25,28 +26,23 @@ ARG TARGETOS
 ARG TARGETARCH
 
 # Install librdkafka for the target architecture
-RUN case ${TARGETARCH} in \
-    "amd64") \
-        apk add --no-cache librdkafka-dev \
-        ;; \
-    "arm64") \
-        apk add --no-cache librdkafka-dev \
-        ;; \
-    *) \
-        echo "Unsupported architecture: ${TARGETARCH}" && exit 1 \
-        ;; \
-    esac
+RUN apt-get update && apt-get install -y \
+    librdkafka-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Build the binary
 ENV CGO_ENABLED=1
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 
-RUN go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o kaf .
+RUN go build -o kaf .
 
 # Final minimal image
-FROM alpine:latest AS final
-RUN apk --no-cache add ca-certificates tzdata
+FROM ubuntu:22.04 AS final
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /root/
 
 # Copy the binary from builder stage
