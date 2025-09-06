@@ -45,7 +45,7 @@ func NewClient(provider Provider) (*Client, error) {
         case OpenAI:
                 apiKey = os.Getenv("OPENAI_API_KEY")
                 baseURL = "https://api.openai.com/v1/chat/completions"
-                model = "gpt-4"
+                model = "gpt-4o"
         case Claude:
                 apiKey = os.Getenv("ANTHROPIC_API_KEY")
                 baseURL = "https://api.anthropic.com/v1/messages"
@@ -105,11 +105,11 @@ func (c *Client) AnalyzeMetrics(metrics []Metric) (*MetricsAnalysis, error) {
 func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
         // Exclude verbose metric prefixes to reduce token usage
         EXCLUDE_METRICS_PREFIX := []string{
-                "kafka_server_fetcherlagmetrics",
-                "kafka_server_replicafetchermanager",
-                "kafka_network_requestmetrics",
-                "kafka_controller_controllerstats",
-                "kafka_server_delayedoperationpurgatory",
+                "kafka_server_fetcherlagmetrics",       // Consumer lag metrics - very verbose
+                "kafka_server_replicafetchermanager",   // Replica fetch manager metrics
+                "kafka_network_requestmetrics",         // Network request metrics - high volume
+                "kafka_controller_controllerstats",     // Controller statistics
+                "kafka_server_delayedoperationpurgatory", // Delayed operation metrics
         }
         
         // Convert metrics to compact JSON format to reduce token usage

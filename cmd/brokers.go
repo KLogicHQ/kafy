@@ -100,8 +100,9 @@ var brokersDescribeCmd = &cobra.Command{
 }
 
 var (
-        metricsAnalyzeFlag bool
+        metricsAnalyzeFlag  bool
         metricsProviderFlag string
+        metricsModelFlag    string
 )
 
 var brokersMetricsCmd = &cobra.Command{
@@ -153,12 +154,12 @@ var brokersMetricsCmd = &cobra.Command{
                         return fmt.Errorf("broker %d not found", brokerID)
                 }
 
-                return fetchAndDisplayMetrics(targetBroker.Host, cluster.BrokerMetricsPort, metricsAnalyzeFlag, metricsProviderFlag)
+                return fetchAndDisplayMetrics(targetBroker.Host, cluster.BrokerMetricsPort, metricsAnalyzeFlag, metricsProviderFlag, metricsModelFlag)
         },
 }
 
 // fetchAndDisplayMetrics retrieves and parses Prometheus metrics from a broker
-func fetchAndDisplayMetrics(brokerHost string, metricsPort int, analyze bool, provider string) error {
+func fetchAndDisplayMetrics(brokerHost string, metricsPort int, analyze bool, provider, model string) error {
         url := fmt.Sprintf("http://%s:%d/metrics", brokerHost, metricsPort)
 
         client := &http.Client{
@@ -184,7 +185,7 @@ func fetchAndDisplayMetrics(brokerHost string, metricsPort int, analyze bool, pr
                 fmt.Println("🤖 AI ANALYSIS & RECOMMENDATIONS")
                 fmt.Println(strings.Repeat("=", 80))
                 
-                if err := performAIAnalysis(metrics, provider); err != nil {
+                if err := performAIAnalysis(metrics, provider, model); err != nil {
                         fmt.Printf("⚠️  AI Analysis failed: %v\n", err)
                         fmt.Println("💡 Tip: Make sure your API key is configured for the selected provider")
                 }
@@ -278,7 +279,7 @@ func isKafkaMetric(metricName string) bool {
 }
 
 // performAIAnalysis sends metrics to AI for analysis and displays results
-func performAIAnalysis(metrics []ai.Metric, provider string) error {
+func performAIAnalysis(metrics []ai.Metric, provider, model string) error {
         if provider == "" {
                 provider = "openai" // Default provider
         }
@@ -303,6 +304,11 @@ func performAIAnalysis(metrics []ai.Metric, provider string) error {
         client, err := ai.NewClient(aiProvider)
         if err != nil {
                 return err
+        }
+        
+        // Override model if specified
+        if model != "" {
+                client.Model = model
         }
         
         analysis, err := client.AnalyzeMetrics(metrics)
@@ -500,6 +506,7 @@ func init() {
         // Add AI analysis flags to metrics command
         brokersMetricsCmd.Flags().BoolVarP(&metricsAnalyzeFlag, "analyze", "a", false, "Enable AI-powered analysis and recommendations")
         brokersMetricsCmd.Flags().StringVarP(&metricsProviderFlag, "provider", "p", "openai", "AI provider (openai, claude, grok, gemini)")
+        brokersMetricsCmd.Flags().StringVarP(&metricsModelFlag, "model", "m", "", "AI model to use (defaults: gpt-4o, claude-3-sonnet, grok-beta, gemini-pro)")
 
         // Add completion support
         brokersDescribeCmd.ValidArgsFunction = completeBrokerIDs
