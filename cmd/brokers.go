@@ -1,9 +1,13 @@
 package cmd
 
 import (
+        "bufio"
         "fmt"
+        "net/http"
+        "sort"
         "strconv"
         "strings"
+        "time"
 
         "github.com/spf13/cobra"
         "kaf/config"
@@ -95,17 +99,160 @@ var brokersDescribeCmd = &cobra.Command{
 }
 
 var brokersMetricsCmd = &cobra.Command{
-        Use:   "metrics",
-        Short: "Show broker metrics (disk, CPU, requests)",
+        Use:   "metrics <broker-id>",
+        Short: "Show broker metrics from Prometheus endpoint",
+        Args:  cobra.ExactArgs(1),
         RunE: func(cmd *cobra.Command, args []string) error {
-                fmt.Println("Broker metrics functionality would require JMX or other monitoring integration")
-                fmt.Println("This feature would show:")
-                fmt.Println("- Disk usage per broker")
-                fmt.Println("- CPU utilization")
-                fmt.Println("- Request rates")
-                fmt.Println("- Network I/O statistics")
-                return nil
+                brokerIDStr := args[0]
+                brokerID, err := strconv.Atoi(brokerIDStr)
+                if err != nil {
+                        return fmt.Errorf("invalid broker ID: %s", brokerIDStr)
+                }
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                cluster, err := cfg.GetCurrentCluster()
+                if err != nil {
+                        return err
+                }
+
+                if cluster.BrokerMetricsPort == 0 {
+                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kaf config add <cluster> --broker-metrics-port <port>")
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                brokers, err := client.ListBrokers()
+                if err != nil {
+                        return err
+                }
+
+                // Find the broker
+                var targetBroker *kafka.BrokerInfo
+                for _, broker := range brokers {
+                        if broker.ID == int32(brokerID) {
+                                targetBroker = &broker
+                                break
+                        }
+                }
+
+                if targetBroker == nil {
+                        return fmt.Errorf("broker %d not found", brokerID)
+                }
+
+                return fetchAndDisplayMetrics(targetBroker.Host, cluster.BrokerMetricsPort)
         },
+}
+
+// fetchAndDisplayMetrics retrieves and parses Prometheus metrics from a broker
+func fetchAndDisplayMetrics(brokerHost string, metricsPort int) error {
+        url := fmt.Sprintf("http://%s:%d/metrics", brokerHost, metricsPort)
+        
+        client := &http.Client{
+                Timeout: 10 * time.Second,
+        }
+        
+        resp, err := client.Get(url)
+        if err != nil {
+                return fmt.Errorf("failed to fetch metrics from %s: %w", url, err)
+        }
+        defer resp.Body.Close()
+        
+        if resp.StatusCode != http.StatusOK {
+                return fmt.Errorf("metrics endpoint returned status %d", resp.StatusCode)
+        }
+        
+        metrics := parsePrometheusMetrics(resp)
+        displayMetrics(metrics)
+        
+        return nil
+}
+
+// parsePrometheusMetrics parses Prometheus format metrics
+func parsePrometheusMetrics(resp *http.Response) map[string]string {
+        metrics := make(map[string]string)
+        scanner := bufio.NewScanner(resp.Body)
+        
+        for scanner.Scan() {
+                line := strings.TrimSpace(scanner.Text())
+                
+                // Skip comments and empty lines
+                if strings.HasPrefix(line, "#") || line == "" {
+                        continue
+                }
+                
+                // Parse metric line: metric_name{labels} value
+                parts := strings.Fields(line)
+                if len(parts) >= 2 {
+                        metricName := parts[0]
+                        value := parts[1]
+                        
+                        // Only include key Kafka metrics
+                        if isKafkaMetric(metricName) {
+                                metrics[metricName] = value
+                        }
+                }
+        }
+        
+        return metrics
+}
+
+// isKafkaMetric checks if a metric is relevant for Kafka monitoring
+func isKafkaMetric(metricName string) bool {
+        kafkaMetricPrefixes := []string{
+                "kafka_server_",
+                "kafka_controller_",
+                "kafka_coordinator_",
+                "kafka_log_",
+                "kafka_network_",
+                "jvm_memory_",
+                "jvm_gc_",
+                "process_cpu_",
+                "process_resident_memory_",
+        }
+        
+        for _, prefix := range kafkaMetricPrefixes {
+                if strings.HasPrefix(metricName, prefix) {
+                        return true
+                }
+        }
+        
+        return false
+}
+
+// displayMetrics formats and displays the parsed metrics
+func displayMetrics(metrics map[string]string) {
+        if len(metrics) == 0 {
+                fmt.Println("No Kafka metrics found")
+                return
+        }
+        
+        formatter := getFormatter()
+        headers := []string{"Metric", "Value"}
+        var rows [][]string
+        
+        // Sort metrics for consistent output
+        var sortedKeys []string
+        for key := range metrics {
+                sortedKeys = append(sortedKeys, key)
+        }
+        sort.Strings(sortedKeys)
+        
+        for _, key := range sortedKeys {
+                // Clean up metric name for display
+                displayName := strings.ReplaceAll(key, "_", " ")
+                displayName = strings.Title(displayName)
+                
+                rows = append(rows, []string{displayName, metrics[key]})
+        }
+        
+        formatter.OutputTable(headers, rows)
 }
 
 // Broker config commands
@@ -227,6 +374,7 @@ func init() {
 
         // Add completion support
         brokersDescribeCmd.ValidArgsFunction = completeBrokerIDs
+        brokersMetricsCmd.ValidArgsFunction = completeBrokerIDs
         brokersConfigsGetCmd.ValidArgsFunction = completeBrokerIDs
         brokersConfigsSetCmd.ValidArgsFunction = completeBrokerIDs
 
