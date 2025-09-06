@@ -86,8 +86,17 @@ var configCurrentCmd = &cobra.Command{
                         
                         rows = append(rows, []string{"Context", cfg.CurrentContext})
                         rows = append(rows, []string{"Bootstrap", cluster.Bootstrap})
+                        
                         if cluster.Zookeeper != "" {
                                 rows = append(rows, []string{"Zookeeper", cluster.Zookeeper})
+                        } else {
+                                rows = append(rows, []string{"Zookeeper", "-"})
+                        }
+                        
+                        if cluster.BrokerMetricsPort > 0 {
+                                rows = append(rows, []string{"Metrics Port", fmt.Sprintf("%d", cluster.BrokerMetricsPort)})
+                        } else {
+                                rows = append(rows, []string{"Metrics Port", "-"})
                         }
                         
                         formatter.OutputTable(headers, rows)
@@ -95,13 +104,15 @@ var configCurrentCmd = &cobra.Command{
                 } else {
                         // For JSON/YAML, use structured output
                         currentConfig := struct {
-                                Name      string `json:"name" yaml:"name"`
-                                Bootstrap string `json:"bootstrap" yaml:"bootstrap"`
-                                Zookeeper string `json:"zookeeper,omitempty" yaml:"zookeeper,omitempty"`
+                                Name              string `json:"name" yaml:"name"`
+                                Bootstrap         string `json:"bootstrap" yaml:"bootstrap"`
+                                Zookeeper         string `json:"zookeeper,omitempty" yaml:"zookeeper,omitempty"`
+                                BrokerMetricsPort int    `json:"broker-metrics-port,omitempty" yaml:"broker-metrics-port,omitempty"`
                         }{
-                                Name:      cfg.CurrentContext,
-                                Bootstrap: cluster.Bootstrap,
-                                Zookeeper: cluster.Zookeeper,
+                                Name:              cfg.CurrentContext,
+                                Bootstrap:         cluster.Bootstrap,
+                                Zookeeper:         cluster.Zookeeper,
+                                BrokerMetricsPort: cluster.BrokerMetricsPort,
                         }
                         return formatter.Output(currentConfig)
                 }
@@ -340,7 +351,7 @@ var configExportCmd = &cobra.Command{
                 formatter := getFormatter()
                 if outputFormat == "table" {
                         // For table output, show structured cluster information
-                        headers := []string{"Context", "Bootstrap", "Zookeeper", "Current"}
+                        headers := []string{"Context", "Bootstrap", "Zookeeper", "Metrics Port", "Current"}
                         var rows [][]string
                         
                         for name, cluster := range cfg.Clusters {
@@ -352,7 +363,11 @@ var configExportCmd = &cobra.Command{
                                 if zk == "" {
                                         zk = "-"
                                 }
-                                rows = append(rows, []string{name, cluster.Bootstrap, zk, current})
+                                metricsPort := "-"
+                                if cluster.BrokerMetricsPort > 0 {
+                                        metricsPort = fmt.Sprintf("%d", cluster.BrokerMetricsPort)
+                                }
+                                rows = append(rows, []string{name, cluster.Bootstrap, zk, metricsPort, current})
                         }
                         
                         formatter.OutputTable(headers, rows)
