@@ -304,6 +304,7 @@ kaf tail orders
 | `kaf brokers list` | List all brokers | Show broker IDs and connection info |
 | `kaf brokers describe <broker-id>` | Show broker details | `kaf brokers describe 1` |
 | `kaf brokers metrics <broker-id>` | Show broker Prometheus metrics | `kaf brokers metrics 1` (requires --broker-metrics-port) |
+| `kaf brokers metrics <broker-id> --analyze` | AI-powered metrics analysis | `kaf brokers metrics 1 --analyze --provider openai` |
 
 ### Broker Configuration Commands
 
@@ -553,7 +554,83 @@ kaf groups lag payment-service           # Partition lag metrics
 # Broker metrics monitoring (Prometheus)
 kaf brokers metrics 1                    # Kafka server and JVM metrics
 kaf brokers metrics 2                    # Network I/O and process stats
+
+# AI-powered metrics analysis (optional)
+export OPENAI_API_KEY="your-openai-key"   # Configure API key
+kaf brokers metrics 1 --analyze           # OpenAI analysis (default)
+kaf brokers metrics 1 --analyze --provider claude    # Use Claude
+kaf brokers metrics 1 --analyze --provider grok      # Use Grok
+kaf brokers metrics 1 --analyze --provider gemini    # Use Gemini
 ```
+
+### AI-Powered Metrics Analysis
+
+The broker metrics command supports optional AI analysis to provide intelligent recommendations and root cause analysis:
+
+#### Supported AI Providers
+
+| Provider | Environment Variable | Model Used |
+|----------|---------------------|------------|
+| **OpenAI** (default) | `OPENAI_API_KEY` | GPT-4 |
+| **Claude** | `ANTHROPIC_API_KEY` | Claude-3-Sonnet |
+| **Grok** | `XAI_API_KEY` | Grok-Beta |
+| **Gemini** | `GOOGLE_API_KEY` | Gemini-Pro |
+
+#### Setup Instructions
+
+1. **Configure API Key**: Set the environment variable for your chosen provider:
+   ```bash
+   # For OpenAI (default)
+   export OPENAI_API_KEY="your-openai-api-key"
+   
+   # For Claude
+   export ANTHROPIC_API_KEY="your-anthropic-api-key"
+   
+   # For Grok
+   export XAI_API_KEY="your-xai-api-key"
+   
+   # For Gemini
+   export GOOGLE_API_KEY="your-google-api-key"
+   ```
+
+2. **Use AI Analysis**: Add the `--analyze` flag to any metrics command:
+   ```bash
+   # Basic AI analysis with OpenAI
+   kaf brokers metrics 1 --analyze
+   
+   # Use specific AI provider
+   kaf brokers metrics 1 --analyze --provider claude
+   ```
+
+#### Analysis Output
+
+The AI analysis provides structured insights:
+- **📊 Summary**: Overall health assessment
+- **⚠️ Issues Identified**: Performance problems and bottlenecks  
+- **🔍 Root Cause Analysis**: Explanations of what's causing issues
+- **💡 Recommendations**: Specific, actionable solutions
+
+Example output:
+```
+================================================================================
+🤖 AI ANALYSIS & RECOMMENDATIONS  
+================================================================================
+🔄 Analyzing metrics with OPENAI...
+
+📊 SUMMARY:
+   Broker shows healthy performance with normal memory usage and stable throughput
+
+⚠️ ISSUES IDENTIFIED:
+   1. High GC frequency indicates memory pressure
+   2. Consumer lag building up on topic '__consumer_offsets'
+
+💡 RECOMMENDATIONS:
+   1. Increase heap size from 4GB to 6GB
+   2. Tune G1GC settings for better throughput
+   3. Monitor consumer group distribution
+```
+
+**Note**: AI analysis is completely optional and requires your own API keys. All metrics are processed securely through the configured AI provider.
 
 ## 🆘 Troubleshooting
 
