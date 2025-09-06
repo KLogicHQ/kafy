@@ -241,6 +241,82 @@ var configRenameCmd = &cobra.Command{
         },
 }
 
+var configUpdateCmd = &cobra.Command{
+        Use:   "update <cluster-name>",
+        Short: "Update cluster configuration",
+        Args:  cobra.ExactArgs(1),
+        RunE: func(cmd *cobra.Command, args []string) error {
+                clusterName := args[0]
+                
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                cluster, exists := cfg.Clusters[clusterName]
+                if !exists {
+                        return fmt.Errorf("cluster '%s' not found", clusterName)
+                }
+
+                // Get flag values
+                newName, _ := cmd.Flags().GetString("name")
+                bootstrap, _ := cmd.Flags().GetString("bootstrap")
+                zookeeper, _ := cmd.Flags().GetString("zookeeper")
+                metricsPort, _ := cmd.Flags().GetInt("broker-metrics-port")
+
+                // Check if any flags were provided
+                hasUpdates := false
+                
+                // Update bootstrap if provided
+                if bootstrap != "" {
+                        cluster.Bootstrap = bootstrap
+                        hasUpdates = true
+                }
+                
+                // Update zookeeper if provided
+                if cmd.Flags().Changed("zookeeper") {
+                        cluster.Zookeeper = zookeeper
+                        hasUpdates = true
+                }
+                
+                // Update broker metrics port if provided
+                if cmd.Flags().Changed("broker-metrics-port") {
+                        cluster.BrokerMetricsPort = metricsPort
+                        hasUpdates = true
+                }
+
+                // Handle name change
+                if newName != "" && newName != clusterName {
+                        if _, exists := cfg.Clusters[newName]; exists {
+                                return fmt.Errorf("cluster '%s' already exists", newName)
+                        }
+                        
+                        // Rename cluster
+                        cfg.Clusters[newName] = cluster
+                        delete(cfg.Clusters, clusterName)
+                        
+                        // Update current context if needed
+                        if cfg.CurrentContext == clusterName {
+                                cfg.CurrentContext = newName
+                        }
+                        
+                        hasUpdates = true
+                        clusterName = newName // For final message
+                }
+
+                if !hasUpdates {
+                        return fmt.Errorf("no updates provided. Use --bootstrap, --zookeeper, --broker-metrics-port, or --name flags")
+                }
+
+                if err := cfg.Save(); err != nil {
+                        return err
+                }
+
+                fmt.Printf("Updated cluster '%s'\n", clusterName)
+                return nil
+        },
+}
+
 var configExportCmd = &cobra.Command{
         Use:   "export",
         Short: "Export config to YAML/JSON",
@@ -325,15 +401,22 @@ func init() {
         configCmd.AddCommand(configAddCmd)
         configCmd.AddCommand(configDeleteCmd)
         configCmd.AddCommand(configRenameCmd)
+        configCmd.AddCommand(configUpdateCmd)
         configCmd.AddCommand(configExportCmd)
         configCmd.AddCommand(configImportCmd)
 
         // Add completion support
         configUseCmd.ValidArgsFunction = completeClusters
         configDeleteCmd.ValidArgsFunction = completeClusters
+        configUpdateCmd.ValidArgsFunction = completeClusters
 
         // Add flags
         configAddCmd.Flags().String("bootstrap", "", "Bootstrap servers (required)")
         configAddCmd.Flags().String("zookeeper", "", "Zookeeper connection string")
         configAddCmd.Flags().Int("broker-metrics-port", 0, "Broker metrics port for Prometheus endpoint (optional)")
+        
+        configUpdateCmd.Flags().String("name", "", "New cluster name")
+        configUpdateCmd.Flags().String("bootstrap", "", "Bootstrap servers")
+        configUpdateCmd.Flags().String("zookeeper", "", "Zookeeper connection string")
+        configUpdateCmd.Flags().Int("broker-metrics-port", 0, "Broker metrics port for Prometheus endpoint")
 }
