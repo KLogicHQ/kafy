@@ -195,7 +195,7 @@ func parsePrometheusMetrics(resp *http.Response) []Metric {
                 }
 
                 metric := parseMetricLine(line)
-                if metric != nil && isKafkaMetric(metric.Name) {
+                if metric != nil {
                         metrics = append(metrics, *metric)
                 }
         }
