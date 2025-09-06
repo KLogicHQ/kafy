@@ -171,8 +171,19 @@ func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
 
 %s
 
-Provide analysis in valid JSON format only. Do not include any text outside the JSON object:
-{"issues":[],"root_causes":[],"recommendations":[],"summary":""}`, string(jsonData))
+IMPORTANT: Return ONLY valid JSON in this EXACT format with NO additional text:
+{
+  "issues": ["string1", "string2"],
+  "root_causes": ["string1", "string2"], 
+  "recommendations": ["string1", "string2"],
+  "summary": "string"
+}
+
+Rules:
+- All fields must be present
+- issues/root_causes/recommendations must be arrays of strings (not objects)
+- summary must be a single string
+- No markdown, no explanations, no extra fields`, string(jsonData))
 }
 
 // Metric represents a parsed metric for AI analysis
@@ -196,8 +207,32 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
                                 "content": prompt,
                         },
                 },
-                "response_format": map[string]string{
+                "response_format": map[string]interface{}{
                         "type": "json_object",
+                        "json_schema": map[string]interface{}{
+                                "name": "metrics_analysis",
+                                "strict": true,
+                                "schema": map[string]interface{}{
+                                        "type": "object",
+                                        "properties": map[string]interface{}{
+                                                "issues": map[string]interface{}{
+                                                        "type": "array",
+                                                        "items": map[string]string{"type": "string"},
+                                                },
+                                                "root_causes": map[string]interface{}{
+                                                        "type": "array",
+                                                        "items": map[string]string{"type": "string"},
+                                                },
+                                                "recommendations": map[string]interface{}{
+                                                        "type": "array",
+                                                        "items": map[string]string{"type": "string"},
+                                                },
+                                                "summary": map[string]string{"type": "string"},
+                                        },
+                                        "required": []string{"issues", "root_causes", "recommendations", "summary"},
+                                        "additionalProperties": false,
+                                },
+                        },
                 },
         }
         

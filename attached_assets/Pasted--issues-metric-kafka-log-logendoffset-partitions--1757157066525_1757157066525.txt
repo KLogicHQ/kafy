@@ -1,0 +1,235 @@
+{
+    "issues": [
+        {
+            "metric": "kafka_log_logendoffset",
+            "partitions": [
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 40,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 29,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 43,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 27,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 14,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 2,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 11,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 5,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 26,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 9,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 13,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 24,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 18,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 39,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 1,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 44,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 49,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 15,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 46,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 32,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 21,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 19,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 6,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 8,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 3,
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "metric": "kafka_log_size",
+            "partitions": [
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 40,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 29,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 13,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 28,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 5,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 1,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 49,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 44,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 6,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 19,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 17,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 26,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 24,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 22,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 10,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 12,
+                    "value": 0
+                },
+                {
+                    "topic": "__consumer_offsets",
+                    "partition": 38,
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "root_causes": [
+        "Partitions with zero log end offsets indicate that they are not receiving any messages, which may lead to data loss if not addressed.",
+        "Zero log sizes for consumer offset topics suggest that consumers may not be processing messages or that there are issues with the consumers themselves."
+    ],
+    "recommendations": [
+        "Investigate the consumer applications for the partitions with zero log end offsets to ensure they are functioning correctly.",
+        "Check the consumer group configurations and ensure that they are properly subscribed to the topics.",
+        "Consider increasing the number of partitions for high-volume topics to improve throughput and reduce the likelihood of consumer lag.",
+        "Monitor the consumer lag metrics to ensure that consumers are keeping up with the message production rate."
+    ],
+    "summary": "The current metrics indicate several partitions with zero log end offsets and sizes, which may suggest issues with consumer applications or configurations. Immediate investigation and adjustments are recommended to ensure data integrity and processing efficiency."
+}
