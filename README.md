@@ -153,11 +153,11 @@ kaf completion powershell | Out-String | Invoke-Expression
 ### 1. Configure Your First Cluster
 
 ```bash
-# Add a development cluster
-kaf config add dev --bootstrap "localhost:9092"
+# Add a development cluster with metrics support
+kaf config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
 
-# Add a production cluster with authentication
-kaf config add prod --bootstrap "kafka-prod:9092"
+# Add a production cluster with authentication and metrics
+kaf config add prod --bootstrap "kafka-prod:9092" --broker-metrics-port 9308
 
 # List configured clusters
 kaf config list
@@ -224,7 +224,7 @@ kaf consume orders --group my-service
 kaf consume orders --output json --limit 5
 
 # Tail messages in real-time (like tail -f)
-kaf util tail orders
+kaf tail orders
 ```
 
 ## 📖 Complete Command Reference
@@ -236,7 +236,7 @@ kaf util tail orders
 | `kaf config list` | List all configured clusters | Show cluster overview with current context |
 | `kaf config current` | Show current active cluster | Display active cluster details |
 | `kaf config use <name>` | Switch to different cluster | `kaf config use prod` |
-| `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add dev --bootstrap localhost:9092` |
+| `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add dev --bootstrap localhost:9092 --broker-metrics-port 9308` |
 | `kaf config delete <name>` | Remove cluster | `kaf config delete old-cluster` |
 | `kaf config rename <old> <new>` | Rename cluster | `kaf config rename dev development` |
 | `kaf config export` | Export config to YAML/JSON | Backup or share configurations |
@@ -297,7 +297,7 @@ kaf util tail orders
 |---------|-------------|----------|
 | `kaf brokers list` | List all brokers | Show broker IDs and connection info |
 | `kaf brokers describe <broker-id>` | Show broker details | `kaf brokers describe 1` |
-| `kaf brokers metrics` | Show broker metrics | Display broker performance data |
+| `kaf brokers metrics <broker-id>` | Show broker Prometheus metrics | `kaf brokers metrics 1` (requires --broker-metrics-port) |
 
 ### Broker Configuration Commands
 
@@ -321,7 +321,7 @@ kaf util tail orders
 | Command | Description | Examples |
 |---------|-------------|----------|
 | `kaf util random-key` | Generate random message key | For testing message keys |
-| `kaf util tail <topic>` | Tail messages in real-time | `kaf util tail orders` |
+| `kaf tail <topic>` | Tail messages in real-time | `kaf tail orders` |
 | `kaf util version` | Show version information | Display CLI version |
 | `kaf completion <shell>` | Generate completion scripts | `kaf completion bash` |
 
@@ -335,9 +335,11 @@ current-context: dev
 clusters:
   dev:
     bootstrap: localhost:9092
+    broker-metrics-port: 9308
 
   staging:
     bootstrap: kafka-staging:9092
+    broker-metrics-port: 9308
     security:
       sasl:
         mechanism: PLAIN
@@ -346,6 +348,7 @@ clusters:
 
   prod:
     bootstrap: kafka-prod:9092
+    broker-metrics-port: 9308
     security:
       sasl:
         mechanism: SCRAM-SHA-512
@@ -413,7 +416,7 @@ kaf produce test-events --count 100
 kaf consume test-events --from-beginning --limit 10
 
 # Or tail real-time messages
-kaf util tail test-events
+kaf tail test-events
 
 # Configure topic settings
 kaf topics config set test-events retention.ms=3600000
@@ -495,6 +498,22 @@ kaf brokers configs get 1
 
 # Update broker settings
 kaf brokers configs set 1 log.retention.hours=72
+```
+
+### Broker Metrics Monitoring
+
+```bash
+# Configure cluster with metrics port
+kaf config add prod --bootstrap kafka-prod:9092 --broker-metrics-port 9308
+
+# View Prometheus metrics for specific broker
+kaf brokers metrics 1
+
+# Sample metrics include:
+# - Kafka server metrics (requests, throughput)
+# - JVM memory usage and garbage collection
+# - Network I/O statistics
+# - Process CPU and memory utilization
 ```
 
 ## 🆘 Troubleshooting
