@@ -103,6 +103,15 @@ func (c *Client) AnalyzeMetrics(metrics []Metric) (*MetricsAnalysis, error) {
 
 // buildAnalysisPrompt creates a structured prompt for metrics analysis
 func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
+        // Exclude verbose metric prefixes to reduce token usage
+        EXCLUDE_METRICS_PREFIX := []string{
+                "kafka_server_fetcherlagmetrics",
+                "kafka_server_replicafetchermanager",
+                "kafka_network_requestmetrics",
+                "kafka_controller_controllerstats",
+                "kafka_server_delayedoperationpurgatory",
+        }
+        
         // Convert metrics to compact JSON format to reduce token usage
         type MetricData struct {
                 Kafka   []map[string]string `json:"kafka_metrics,omitempty"`
@@ -114,8 +123,32 @@ func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
         
         // Group and format metrics compactly
         for _, m := range metrics {
+                // Skip metrics with excluded prefixes
+                shouldExclude := false
+                for _, prefix := range EXCLUDE_METRICS_PREFIX {
+                        if strings.HasPrefix(m.Name, prefix) {
+                                shouldExclude = true
+                                break
+                        }
+                }
+                if shouldExclude {
+                        continue
+                }
+                
+                // Remove common prefixes to shorten metric names
+                shortName := m.Name
+                if strings.HasPrefix(shortName, "kafka_server_") {
+                        shortName = strings.TrimPrefix(shortName, "kafka_server_")
+                } else if strings.HasPrefix(shortName, "kafka_") {
+                        shortName = strings.TrimPrefix(shortName, "kafka_")
+                } else if strings.HasPrefix(shortName, "jvm_") {
+                        shortName = strings.TrimPrefix(shortName, "jvm_")
+                } else if strings.HasPrefix(shortName, "process_") {
+                        shortName = strings.TrimPrefix(shortName, "process_")
+                }
+                
                 metric := map[string]string{
-                        "n": m.Name,
+                        "n": shortName,
                         "v": m.Value,
                 }
                 if m.Labels != "" {
