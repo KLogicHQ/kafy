@@ -358,9 +358,16 @@ var topicsConfigsListCmd = &cobra.Command{
                                         continue // Skip topics we can't access
                                 }
                                 
-                                // configs is map[string]string from the client method
-                                for key, value := range configs {
-                                        rows = append(rows, []string{topic.Name, key, value})
+                                // Get all keys and sort them alphabetically
+                                keys := make([]string, 0, len(configs))
+                                for key := range configs {
+                                        keys = append(keys, key)
+                                }
+                                sort.Strings(keys)
+                                
+                                // Add rows in alphabetical order for each topic
+                                for _, key := range keys {
+                                        rows = append(rows, []string{topic.Name, key, configs[key]})
                                 }
                         }
                         
