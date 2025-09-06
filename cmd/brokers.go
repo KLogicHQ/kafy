@@ -100,8 +100,8 @@ var brokersDescribeCmd = &cobra.Command{
 }
 
 var (
-        analyzeFlag bool
-        providerFlag string
+        metricsAnalyzeFlag bool
+        metricsProviderFlag string
 )
 
 var brokersMetricsCmd = &cobra.Command{
@@ -153,7 +153,7 @@ var brokersMetricsCmd = &cobra.Command{
                         return fmt.Errorf("broker %d not found", brokerID)
                 }
 
-                return fetchAndDisplayMetrics(targetBroker.Host, cluster.BrokerMetricsPort, analyzeFlag, providerFlag)
+                return fetchAndDisplayMetrics(targetBroker.Host, cluster.BrokerMetricsPort, metricsAnalyzeFlag, metricsProviderFlag)
         },
 }
 
@@ -498,8 +498,8 @@ func init() {
         brokersCmd.AddCommand(brokersConfigsCmd)
 
         // Add AI analysis flags to metrics command
-        brokersMetricsCmd.Flags().BoolVarP(&analyzeFlag, "analyze", "a", false, "Enable AI-powered analysis and recommendations")
-        brokersMetricsCmd.Flags().StringVarP(&providerFlag, "provider", "p", "openai", "AI provider (openai, claude, grok, gemini)")
+        brokersMetricsCmd.Flags().BoolVarP(&metricsAnalyzeFlag, "analyze", "a", false, "Enable AI-powered analysis and recommendations")
+        brokersMetricsCmd.Flags().StringVarP(&metricsProviderFlag, "provider", "p", "openai", "AI provider (openai, claude, grok, gemini)")
 
         // Add completion support
         brokersDescribeCmd.ValidArgsFunction = completeBrokerIDs
