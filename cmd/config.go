@@ -131,6 +131,7 @@ var configAddCmd = &cobra.Command{
                 clusterName := args[0]
                 bootstrap, _ := cmd.Flags().GetString("bootstrap")
                 zookeeper, _ := cmd.Flags().GetString("zookeeper")
+                metricsPort, _ := cmd.Flags().GetInt("broker-metrics-port")
                 
                 if bootstrap == "" {
                         return fmt.Errorf("--bootstrap flag is required")
@@ -146,8 +147,9 @@ var configAddCmd = &cobra.Command{
                 }
 
                 cfg.Clusters[clusterName] = &config.Cluster{
-                        Bootstrap: bootstrap,
-                        Zookeeper: zookeeper,
+                        Bootstrap:         bootstrap,
+                        Zookeeper:         zookeeper,
+                        BrokerMetricsPort: metricsPort,
                 }
 
                 // Set as current if it's the first cluster
@@ -333,4 +335,5 @@ func init() {
         // Add flags
         configAddCmd.Flags().String("bootstrap", "", "Bootstrap servers (required)")
         configAddCmd.Flags().String("zookeeper", "", "Zookeeper connection string")
+        configAddCmd.Flags().Int("broker-metrics-port", 0, "Broker metrics port for Prometheus endpoint (optional)")
 }
