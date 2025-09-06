@@ -207,32 +207,8 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
                                 "content": prompt,
                         },
                 },
-                "response_format": map[string]interface{}{
+                "response_format": map[string]string{
                         "type": "json_object",
-                        "json_schema": map[string]interface{}{
-                                "name": "metrics_analysis",
-                                "strict": true,
-                                "schema": map[string]interface{}{
-                                        "type": "object",
-                                        "properties": map[string]interface{}{
-                                                "issues": map[string]interface{}{
-                                                        "type": "array",
-                                                        "items": map[string]string{"type": "string"},
-                                                },
-                                                "root_causes": map[string]interface{}{
-                                                        "type": "array",
-                                                        "items": map[string]string{"type": "string"},
-                                                },
-                                                "recommendations": map[string]interface{}{
-                                                        "type": "array",
-                                                        "items": map[string]string{"type": "string"},
-                                                },
-                                                "summary": map[string]string{"type": "string"},
-                                        },
-                                        "required": []string{"issues", "root_causes", "recommendations", "summary"},
-                                        "additionalProperties": false,
-                                },
-                        },
                 },
         }
         
