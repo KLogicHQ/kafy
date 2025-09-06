@@ -8,6 +8,7 @@ import (
         "github.com/spf13/cobra"
         "gopkg.in/yaml.v3"
         "kaf/config"
+        "kaf/internal/output"
 )
 
 var configCmd = &cobra.Command{
@@ -349,8 +350,12 @@ var configExportCmd = &cobra.Command{
                         return err
                 }
 
-                formatter := getFormatter()
-                // Always export in structured format (YAML/JSON), never table
+                // For export, default to YAML format instead of table
+                format := outputFormat
+                if format == "table" {
+                        format = "yaml"
+                }
+                formatter := output.NewFormatter(format)
                 return formatter.Output(cfg)
         },
 }
