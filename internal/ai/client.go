@@ -105,9 +105,9 @@ func (c *Client) AnalyzeMetrics(metrics []Metric) (*MetricsAnalysis, error) {
 func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
         // Convert metrics to compact JSON format to reduce token usage
         type MetricData struct {
-                Kafka   []map[string]string `json:"k,omitempty"`
-                JVM     []map[string]string `json:"j,omitempty"`
-                Process []map[string]string `json:"p,omitempty"`
+                Kafka   []map[string]string `json:"kafka_metrics,omitempty"`
+                JVM     []map[string]string `json:"jvm_metrics,omitempty"`
+                Process []map[string]string `json:"process_metrics,omitempty"`
         }
         
         data := MetricData{}
@@ -134,7 +134,7 @@ func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
         // Convert to compact JSON
         jsonData, _ := json.Marshal(data)
         
-        return fmt.Sprintf(`Role: Kafka monitoring expert. Analyze broker metrics JSON (n=name,v=value,l=labels,k=kafka,j=jvm,p=process).
+        return fmt.Sprintf(`Role: Kafka monitoring expert. Analyze broker metrics JSON (n=name,v=value,l=labels).
 
 %s
 
