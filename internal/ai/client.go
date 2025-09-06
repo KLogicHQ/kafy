@@ -40,7 +40,7 @@ type MetricsAnalysis struct {
 // NewClient creates a new AI client based on the provider
 func NewClient(provider Provider) (*Client, error) {
         var apiKey, baseURL, model string
-        
+
         switch provider {
         case OpenAI:
                 apiKey = os.Getenv("OPENAI_API_KEY")
@@ -61,7 +61,7 @@ func NewClient(provider Provider) (*Client, error) {
         default:
                 return nil, fmt.Errorf("unsupported provider: %s", provider)
         }
-        
+
         if apiKey == "" {
                 var envVar string
                 switch provider {
@@ -76,7 +76,7 @@ func NewClient(provider Provider) (*Client, error) {
                 }
                 return nil, fmt.Errorf("API key not found for %s. Please set environment variable: %s", provider, envVar)
         }
-        
+
         return &Client{
                 Provider: provider,
                 APIKey:   apiKey,
@@ -88,7 +88,7 @@ func NewClient(provider Provider) (*Client, error) {
 // AnalyzeMetrics sends metrics data to AI for analysis
 func (c *Client) AnalyzeMetrics(metrics []Metric) (*MetricsAnalysis, error) {
         prompt := c.buildAnalysisPrompt(metrics)
-        
+
         switch c.Provider {
         case OpenAI, Grok:
                 return c.callOpenAIAPI(prompt)
@@ -105,22 +105,22 @@ func (c *Client) AnalyzeMetrics(metrics []Metric) (*MetricsAnalysis, error) {
 func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
         // Exclude verbose metric prefixes to reduce token usage
         EXCLUDE_METRICS_PREFIX := []string{
-                "kafka_server_fetcherlagmetrics",       // Consumer lag metrics - very verbose
-                "kafka_server_replicafetchermanager",   // Replica fetch manager metrics
-                "kafka_network_requestmetrics",         // Network request metrics - high volume
-                "kafka_controller_controllerstats",     // Controller statistics
-                "kafka_server_delayedoperationpurgatory", // Delayed operation metrics
+                // "kafka_server_fetcherlagmetrics",       // Consumer lag metrics - very verbose
+                // "kafka_server_replicafetchermanager",   // Replica fetch manager metrics
+                // "kafka_network_requestmetrics",         // Network request metrics - high volume
+                // "kafka_controller_controllerstats",     // Controller statistics
+                // "kafka_server_delayedoperationpurgatory", // Delayed operation metrics
         }
-        
+
         // Convert metrics to compact JSON format to reduce token usage
         type MetricData struct {
                 Kafka   []map[string]string `json:"kafka_metrics,omitempty"`
                 JVM     []map[string]string `json:"jvm_metrics,omitempty"`
                 Process []map[string]string `json:"process_metrics,omitempty"`
         }
-        
+
         data := MetricData{}
-        
+
         // Group and format metrics compactly
         for _, m := range metrics {
                 // Skip metrics with excluded prefixes
@@ -134,27 +134,27 @@ func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
                 if shouldExclude {
                         continue
                 }
-                
+
                 // Remove common prefixes to shorten metric names
                 shortName := m.Name
-                if strings.HasPrefix(shortName, "kafka_server_") {
-                        shortName = strings.TrimPrefix(shortName, "kafka_server_")
-                } else if strings.HasPrefix(shortName, "kafka_") {
-                        shortName = strings.TrimPrefix(shortName, "kafka_")
-                } else if strings.HasPrefix(shortName, "jvm_") {
-                        shortName = strings.TrimPrefix(shortName, "jvm_")
-                } else if strings.HasPrefix(shortName, "process_") {
-                        shortName = strings.TrimPrefix(shortName, "process_")
-                }
-                
+                // if strings.HasPrefix(shortName, "kafka_server_") {
+                //         shortName = strings.TrimPrefix(shortName, "kafka_server_")
+                // } else if strings.HasPrefix(shortName, "kafka_") {
+                //         shortName = strings.TrimPrefix(shortName, "kafka_")
+                // } else if strings.HasPrefix(shortName, "jvm_") {
+                //         shortName = strings.TrimPrefix(shortName, "jvm_")
+                // } else if strings.HasPrefix(shortName, "process_") {
+                //         shortName = strings.TrimPrefix(shortName, "process_")
+                // }
+
                 metric := map[string]string{
-                        "n": shortName,
-                        "v": m.Value,
+                        "name": shortName,
+                        "value": m.Value,
                 }
                 if m.Labels != "" {
-                        metric["l"] = m.Labels
+                        metric["labels"] = m.Labels
                 }
-                
+
                 if strings.HasPrefix(m.Name, "kafka_") {
                         data.Kafka = append(data.Kafka, metric)
                 } else if strings.HasPrefix(m.Name, "jvm_") {
@@ -163,10 +163,10 @@ func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
                         data.Process = append(data.Process, metric)
                 }
         }
-        
+
         // Convert to compact JSON
         jsonData, _ := json.Marshal(data)
-        
+
         return fmt.Sprintf(`Role: Kafka monitoring expert. Analyze broker metrics JSON (n=name,v=value,l=labels).
 
 %s
@@ -199,7 +199,7 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
                 "max_tokens":   1500,
                 "temperature":  0.3,
         }
-        
+
         return c.makeAPICall(payload, func(body []byte) (*MetricsAnalysis, error) {
                 var response struct {
                         Choices []struct {
@@ -208,15 +208,15 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
                                 } `json:"message"`
                         } `json:"choices"`
                 }
-                
+
                 if err := json.Unmarshal(body, &response); err != nil {
                         return nil, err
                 }
-                
+
                 if len(response.Choices) == 0 {
                         return nil, fmt.Errorf("no response from API")
                 }
-                
+
                 return c.parseAnalysisResponse(response.Choices[0].Message.Content)
         })
 }
@@ -234,22 +234,22 @@ func (c *Client) callClaudeAPI(prompt string) (*MetricsAnalysis, error) {
                         },
                 },
         }
-        
+
         return c.makeAPICall(payload, func(body []byte) (*MetricsAnalysis, error) {
                 var response struct {
                         Content []struct {
                                 Text string `json:"text"`
                         } `json:"content"`
                 }
-                
+
                 if err := json.Unmarshal(body, &response); err != nil {
                         return nil, err
                 }
-                
+
                 if len(response.Content) == 0 {
                         return nil, fmt.Errorf("no response from API")
                 }
-                
+
                 return c.parseAnalysisResponse(response.Content[0].Text)
         })
 }
@@ -258,7 +258,7 @@ func (c *Client) callClaudeAPI(prompt string) (*MetricsAnalysis, error) {
 func (c *Client) callGeminiAPI(prompt string) (*MetricsAnalysis, error) {
         systemPrompt := "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations."
         fullPrompt := systemPrompt + "\n\n" + prompt
-        
+
         payload := map[string]interface{}{
                 "contents": []map[string]interface{}{
                         {
@@ -268,7 +268,7 @@ func (c *Client) callGeminiAPI(prompt string) (*MetricsAnalysis, error) {
                         },
                 },
         }
-        
+
         return c.makeAPICall(payload, func(body []byte) (*MetricsAnalysis, error) {
                 var response struct {
                         Candidates []struct {
@@ -279,15 +279,15 @@ func (c *Client) callGeminiAPI(prompt string) (*MetricsAnalysis, error) {
                                 } `json:"content"`
                         } `json:"candidates"`
                 }
-                
+
                 if err := json.Unmarshal(body, &response); err != nil {
                         return nil, err
                 }
-                
+
                 if len(response.Candidates) == 0 || len(response.Candidates[0].Content.Parts) == 0 {
                         return nil, fmt.Errorf("no response from API")
                 }
-                
+
                 return c.parseAnalysisResponse(response.Candidates[0].Content.Parts[0].Text)
         })
 }
@@ -298,12 +298,12 @@ func (c *Client) makeAPICall(payload interface{}, responseParser func([]byte) (*
         if err != nil {
                 return nil, err
         }
-        
+
         req, err := http.NewRequest("POST", c.BaseURL, bytes.NewBuffer(jsonData))
         if err != nil {
                 return nil, err
         }
-        
+
         // Set headers based on provider
         switch c.Provider {
         case OpenAI, Grok:
@@ -318,23 +318,23 @@ func (c *Client) makeAPICall(payload interface{}, responseParser func([]byte) (*
                 // API key is added to URL for Gemini
                 c.BaseURL += "?key=" + c.APIKey
         }
-        
+
         client := &http.Client{Timeout: 30 * time.Second}
         resp, err := client.Do(req)
         if err != nil {
                 return nil, err
         }
         defer resp.Body.Close()
-        
+
         body, err := io.ReadAll(resp.Body)
         if err != nil {
                 return nil, err
         }
-        
+
         if resp.StatusCode != http.StatusOK {
                 return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
         }
-        
+
         return responseParser(body)
 }
 
@@ -343,17 +343,17 @@ func (c *Client) parseAnalysisResponse(content string) (*MetricsAnalysis, error)
         // Try to find JSON in the response
         start := strings.Index(content, "{")
         end := strings.LastIndex(content, "}") + 1
-        
+
         if start == -1 || end <= start {
                 return nil, fmt.Errorf("no valid JSON found in response")
         }
-        
+
         jsonStr := content[start:end]
-        
+
         var analysis MetricsAnalysis
         if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
                 return nil, fmt.Errorf("failed to parse analysis response: %w", err)
         }
-        
+
         return &analysis, nil
 }
