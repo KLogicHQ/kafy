@@ -15,6 +15,8 @@ var versionCmd = &cobra.Command{
                 fmt.Printf("kaf version %s\n", version)
                 fmt.Printf("Go version: %s\n", runtime.Version())
                 fmt.Printf("OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+                fmt.Printf("Copyright (c) 2024 KLogic.io. All rights reserved.\n")
+                fmt.Printf("License: MIT\n")
                 return nil
         },
 }
