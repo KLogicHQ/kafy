@@ -184,7 +184,7 @@ func fetchAndDisplayMetrics(brokerHost string, metricsPort int, analyze bool, pr
                 fmt.Println("\n" + strings.Repeat("=", 80))
                 fmt.Println("🤖 AI ANALYSIS & RECOMMENDATIONS")
                 fmt.Println(strings.Repeat("=", 80))
-                
+
                 if err := performAIAnalysis(metrics, provider, model); err != nil {
                         fmt.Printf("⚠️  AI Analysis failed: %v\n", err)
                         fmt.Println("💡 Tip: Make sure your API key is configured for the selected provider")
@@ -230,11 +230,11 @@ func parseMetricLine(line string) *ai.Metric {
 
         // Parse metric name and labels
         var name, labels string
-        
+
         // Check if there are labels (contains '{' and '}')
         if braceStart := strings.Index(metricPart, "{"); braceStart != -1 {
                 name = metricPart[:braceStart]
-                
+
                 // Find the closing brace
                 braceEnd := strings.LastIndex(metricPart, "}")
                 if braceEnd > braceStart {
@@ -283,7 +283,7 @@ func performAIAnalysis(metrics []ai.Metric, provider, model string) error {
         if provider == "" {
                 provider = "openai" // Default provider
         }
-        
+
         // Convert string provider to ai.Provider type
         var aiProvider ai.Provider
         switch strings.ToLower(provider) {
@@ -298,28 +298,28 @@ func performAIAnalysis(metrics []ai.Metric, provider, model string) error {
         default:
                 return fmt.Errorf("unsupported AI provider: %s. Available: openai, claude, grok, gemini", provider)
         }
-        
+
         fmt.Printf("🔄 Analyzing metrics with %s...\n\n", strings.ToUpper(provider))
-        
+
         client, err := ai.NewClient(aiProvider)
         if err != nil {
                 return err
         }
-        
+
         // Override model if specified
         if model != "" {
                 client.Model = model
         }
-        
+
         analysis, err := client.AnalyzeMetrics(metrics)
         if err != nil {
                 return err
         }
-        
+
         // Display analysis results
         fmt.Println("📊 SUMMARY:")
         fmt.Printf("   %s\n\n", analysis.Summary)
-        
+
         if len(analysis.Issues) > 0 {
                 fmt.Println("⚠️  ISSUES IDENTIFIED:")
                 for i, issue := range analysis.Issues {
@@ -327,7 +327,7 @@ func performAIAnalysis(metrics []ai.Metric, provider, model string) error {
                 }
                 fmt.Println()
         }
-        
+
         if len(analysis.RootCauses) > 0 {
                 fmt.Println("🔍 ROOT CAUSE ANALYSIS:")
                 for i, cause := range analysis.RootCauses {
@@ -335,7 +335,7 @@ func performAIAnalysis(metrics []ai.Metric, provider, model string) error {
                 }
                 fmt.Println()
         }
-        
+
         if len(analysis.Recommendations) > 0 {
                 fmt.Println("💡 RECOMMENDATIONS:")
                 for i, rec := range analysis.Recommendations {
@@ -343,10 +343,10 @@ func performAIAnalysis(metrics []ai.Metric, provider, model string) error {
                 }
                 fmt.Println()
         }
-        
+
         fmt.Println("ℹ️  Note: AI analysis is based on current metrics snapshot and general best practices.")
         fmt.Println("   Always validate recommendations in your specific environment.")
-        
+
         return nil
 }
 
@@ -371,7 +371,7 @@ func displayMetrics(metrics []ai.Metric) {
                 if labels == "" {
                         labels = "-"
                 }
-                
+
                 rows = append(rows, []string{metric.Name, labels, metric.Value})
         }
 
@@ -506,7 +506,7 @@ func init() {
         // Add AI analysis flags to metrics command
         brokersMetricsCmd.Flags().BoolVarP(&metricsAnalyzeFlag, "analyze", "a", false, "Enable AI-powered analysis and recommendations")
         brokersMetricsCmd.Flags().StringVarP(&metricsProviderFlag, "provider", "p", "openai", "AI provider (openai, claude, grok, gemini)")
-        brokersMetricsCmd.Flags().StringVarP(&metricsModelFlag, "model", "m", "", "AI model to use (defaults: gpt-4o, claude-3-sonnet, grok-beta, gemini-pro)")
+        brokersMetricsCmd.Flags().StringVarP(&metricsModelFlag, "model", "m", "", "AI model to use (gpt-4o, claude-3-sonnet, grok-beta, gemini-pro) (default \"gpt-4o\")")
 
         // Add completion support
         brokersDescribeCmd.ValidArgsFunction = completeBrokerIDs
