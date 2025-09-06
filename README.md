@@ -153,11 +153,11 @@ kaf completion powershell | Out-String | Invoke-Expression
 ### 1. Configure Your First Cluster
 
 ```bash
-# Add a development cluster with metrics support
+# Add a development cluster with single bootstrap server
 kaf config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
 
-# Add a production cluster with authentication and metrics
-kaf config add prod --bootstrap "kafka-prod:9092" --broker-metrics-port 9308
+# Add a production cluster with multiple bootstrap servers for high availability
+kaf config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
 
 # List configured clusters
 kaf config list
@@ -231,75 +231,6 @@ kaf consume orders --output json --limit 5
 kaf tail orders
 ```
 
-## 🆕 Recent Enhancements
-
-### Enhanced Partition Management
-
-- **`kaf topics partitions`** - New command showing detailed partition information:
-  - **INSYNC Status**: Automatically calculates "yes/no" based on REPLICAS and ISR array matches
-  - **All Topics**: View partition details across all topics in the cluster
-  - **Single Topic**: Focus on partitions for a specific topic
-  - **Complete Details**: Shows topic, partition ID, leader, replicas, ISRs, and sync status
-
-```bash
-# Example output:
-# TOPIC     | PARTITION | LEADER | REPLICAS | ISRS     | INSYNC
-# orders    | 0         | 1      | [1,2,3]  | [1,2,3]  | yes
-# orders    | 1         | 2      | [2,3,1]  | [2,3]    | no
-```
-
-### Enhanced Configuration Management
-
-- **`kaf config update`** - New command for modifying existing cluster configurations:
-  - **Update Any Field**: Modify bootstrap servers, zookeeper, metrics port, or cluster name
-  - **Metrics Port Support**: Add or update `--broker-metrics-port` for Prometheus monitoring
-  - **Rename Clusters**: Change cluster names while preserving all settings
-  - **Context Preservation**: Automatically updates current context when renaming active cluster
-
-- **Enhanced Display**: All config commands now show complete cluster information:
-  - **Metrics Port**: Displays configured Prometheus metrics port in all views
-  - **Zookeeper Settings**: Shows zookeeper configuration when present
-  - **Complete Export**: Import/export preserves all fields including metrics settings
-
-```bash
-# Update cluster settings:
-kaf config update prod --broker-metrics-port 9308 --zookeeper zk-prod:2181
-
-# Rename cluster:
-kaf config update old-name --name new-name
-
-# Enhanced display includes metrics port:
-# Context  Bootstrap        Zookeeper  Metrics Port  Current
-# dev      localhost:9092   -          9308          *
-# prod     kafka-prod:9092  zk:2181    9308
-```
-
-### Enhanced Consumer Group Management
-
-- **`kaf groups list`** - Now shows comprehensive group information:
-  - **Group State**: Real-time state (Active, PreparingRebalance, etc.)
-  - **Member Count**: Total number of active group members
-  - **Real-time Data**: Uses Kafka admin API for accurate information
-
-- **`kaf groups describe`** - Enhanced member details display:
-  - **Member Information**: Shows Member ID, Client ID, and Host
-  - **Topic Assignments**: Displays assigned topic:partition pairs
-  - **Two-table Format**: Summary table + detailed members table
-  - **Complete Visibility**: Full consumer group health monitoring
-
-```bash
-# Enhanced groups list output:
-# Group ID          | State    | Members
-# payment-service   | Active   | 3
-# user-processor    | Rebalancing | 0
-
-# Enhanced groups describe output includes member details:
-# === MEMBERS ===
-# Member ID        | Client ID    | Host           | Assignments
-# consumer-1-abc   | my-service   | app-1.local    | orders:0, orders:1
-# consumer-2-def   | my-service   | app-2.local    | orders:2
-```
-
 ## 📖 Complete Command Reference
 
 ### Configuration Management
@@ -309,7 +240,7 @@ kaf config update old-name --name new-name
 | `kaf config list` | List all configured clusters | Show cluster overview with metrics port and current context |
 | `kaf config current` | Show current active cluster | Display active cluster details including metrics port |
 | `kaf config use <name>` | Switch to different cluster | `kaf config use prod` |
-| `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add dev --bootstrap localhost:9092 --broker-metrics-port 9308` |
+| `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092"` |
 | `kaf config update <name>` | Update existing cluster configuration | `kaf config update dev --broker-metrics-port 9309 --zookeeper zk:2181` |
 | `kaf config delete <name>` | Remove cluster | `kaf config delete old-cluster` |
 | `kaf config rename <old> <new>` | Rename cluster | `kaf config rename dev development` |
@@ -480,12 +411,15 @@ clusters:
 
 ```bash
 # Set up development environment
-kaf config add local --bootstrap "localhost:9092"
+kaf config add local --bootstrap "localhost:9092" --broker-metrics-port 9308
 kaf config use local
 
 # Create test topic and generate data
 kaf topics create test-events --partitions 1 --replication 1
 kaf produce test-events --count 100
+
+# Monitor partition health and sync status
+kaf topics partitions test-events
 
 # Monitor the data
 kaf consume test-events --from-beginning --limit 10
@@ -494,72 +428,92 @@ kaf consume test-events --from-beginning --limit 10
 kaf tail test-events
 
 # Configure topic settings
-kaf topics config set test-events retention.ms=3600000
-kaf topics config list test-events
+kaf topics configs set test-events retention.ms=3600000
+kaf topics configs get test-events
 ```
 
 ### Production Operations
 
 ```bash
-# Switch to production
+# Add production cluster with multiple bootstrap servers for HA
+kaf config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
 kaf config use prod
 
 # Check cluster health
 kaf health check
 
-# Monitor consumer lag
+# Monitor consumer groups with state and member information
 kaf groups list
+kaf groups describe critical-processor
 kaf groups lag critical-processor
 
-# Inspect broker configurations
+# Check partition health and sync status
+kaf topics partitions critical-topic
+kaf topics partitions  # All topics
+
+# Inspect broker configurations and metrics
 kaf brokers configs list
 kaf brokers describe 1
+kaf brokers metrics 1  # Requires --broker-metrics-port
 
 # List topic details and configurations
 kaf topics list
 kaf topics describe critical-topic
-kaf topics config list critical-topic
+kaf topics configs get critical-topic
 ```
 
 ### Automation & Scripting
 
 ```bash
 #!/bin/bash
+# Set up cluster with multiple bootstrap servers
+kaf config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092" --broker-metrics-port 9308
+
 # Get all topics as JSON for processing
 TOPICS=$(kaf topics list --output json)
 
 # Check if specific topic exists
 if kaf topics describe user-events --output json > /dev/null 2>&1; then
     echo "Topic exists"
+    # Check partition sync status
+    kaf topics partitions user-events --output json
 else
     echo "Creating topic..."
     kaf topics create user-events --partitions 6 --replication 3
 
     # Configure the topic
-    kaf topics config set user-events retention.ms=86400000
-    kaf topics config set user-events cleanup.policy=delete
+    kaf topics configs set user-events retention.ms=86400000
+    kaf topics configs set user-events cleanup.policy=delete
 fi
 
-# Monitor consumer group lag
+# Monitor consumer group with detailed member information
+GROUPS=$(kaf groups list --output json)
+kaf groups describe my-service --output json
 LAG=$(kaf groups lag my-service --output json)
 echo "Current lag: $LAG"
 ```
 
-### Topic Configuration Management
+### Configuration Management
 
 ```bash
-# List configurations for all topics (comprehensive view)
-kaf topics configs list
+# Add clusters with single or multiple bootstrap servers
+kaf config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
+kaf config add staging --bootstrap "kafka-stage-1:9092,kafka-stage-2:9092" --broker-metrics-port 9308
+kaf config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
 
-# Get detailed configs for specific topic
-kaf topics configs get orders
+# Update existing cluster configurations
+kaf config update dev --bootstrap "localhost:9092,localhost:9093" --broker-metrics-port 9309
+kaf config update prod --zookeeper "zk-prod-1:2181,zk-prod-2:2181,zk-prod-3:2181"
 
-# Update topic settings
-kaf topics configs set orders retention.ms=604800000  # 7 days
-kaf topics configs set orders segment.ms=3600000      # 1 hour
+# View complete cluster information
+kaf config list     # Shows all clusters with metrics port and zookeeper
+kaf config current  # Shows detailed current cluster info
 
-# Remove configuration overrides
-kaf topics configs delete orders cleanup.policy
+# Topic configuration management
+kaf topics configs list                              # All topic configs
+kaf topics configs get orders                        # Specific topic
+kaf topics configs set orders retention.ms=604800000 # Update setting
+kaf topics configs delete orders cleanup.policy      # Remove override
 ```
 
 ### Broker Configuration Management
@@ -575,20 +529,30 @@ kaf brokers configs get 1
 kaf brokers configs set 1 log.retention.hours=72
 ```
 
-### Broker Metrics Monitoring
+### Monitoring & Health Checks
 
 ```bash
-# Configure cluster with metrics port
-kaf config add prod --bootstrap kafka-prod:9092 --broker-metrics-port 9308
+# Configure cluster with metrics support
+kaf config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092" --broker-metrics-port 9308
 
-# View Prometheus metrics for specific broker
-kaf brokers metrics 1
+# Comprehensive cluster health monitoring
+kaf health check           # Full cluster diagnostics
+kaf health brokers         # Broker connectivity
+kaf health topics          # Topic accessibility
+kaf health groups          # Consumer group health
 
-# Sample metrics include:
-# - Kafka server metrics (requests, throughput)
-# - JVM memory usage and garbage collection
-# - Network I/O statistics
-# - Process CPU and memory utilization
+# Partition health and sync monitoring
+kaf topics partitions                    # All topics with INSYNC status
+kaf topics partitions critical-topic     # Specific topic partitions
+
+# Consumer group monitoring with member details
+kaf groups list                          # Groups with state and member count
+kaf groups describe payment-service      # Detailed member information
+kaf groups lag payment-service           # Partition lag metrics
+
+# Broker metrics monitoring (Prometheus)
+kaf brokers metrics 1                    # Kafka server and JVM metrics
+kaf brokers metrics 2                    # Network I/O and process stats
 ```
 
 ## 🆘 Troubleshooting
