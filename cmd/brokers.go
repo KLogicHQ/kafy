@@ -196,7 +196,7 @@ func fetchAndDisplayMetrics(brokerHost string, metricsPort int, analyze bool, pr
 
 // parsePrometheusMetrics parses Prometheus format metrics
 func parsePrometheusMetrics(resp *http.Response) []ai.Metric {
-        var metrics []Metric
+        var metrics []ai.Metric
         scanner := bufio.NewScanner(resp.Body)
 
         for scanner.Scan() {
