@@ -3,6 +3,7 @@ package cmd
 import (
         "fmt"
         "runtime"
+        "time"
 
         "github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ var versionCmd = &cobra.Command{
                 fmt.Printf("kaf version %s\n", version)
                 fmt.Printf("Go version: %s\n", runtime.Version())
                 fmt.Printf("OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-                fmt.Printf("Copyright (c) 2024 KLogic.io. All rights reserved.\n")
+                fmt.Printf("Copyright (c) %d KLogic.io. All rights reserved.\n", time.Now().Year())
                 fmt.Printf("License: MIT\n")
                 return nil
         },
