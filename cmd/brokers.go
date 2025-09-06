@@ -174,33 +174,68 @@ func fetchAndDisplayMetrics(brokerHost string, metricsPort int) error {
         return nil
 }
 
+// Metric represents a parsed Prometheus metric
+type Metric struct {
+        Name   string
+        Labels string
+        Value  string
+}
+
 // parsePrometheusMetrics parses Prometheus format metrics
-func parsePrometheusMetrics(resp *http.Response) map[string]string {
-        metrics := make(map[string]string)
+func parsePrometheusMetrics(resp *http.Response) []Metric {
+        var metrics []Metric
         scanner := bufio.NewScanner(resp.Body)
 
         for scanner.Scan() {
                 line := strings.TrimSpace(scanner.Text())
 
-                // Skip comments and empty lines
+                // Skip HELP, TYPE, comments and empty lines
                 if strings.HasPrefix(line, "#") || line == "" {
                         continue
                 }
 
-                // Parse metric line: metric_name{labels} value
-                parts := strings.Fields(line)
-                if len(parts) >= 2 {
-                        metricName := parts[0]
-                        value := parts[1]
-
-                        // Only include key Kafka metrics
-                        if isKafkaMetric(metricName) {
-                                metrics[metricName] = value
-                        }
+                metric := parseMetricLine(line)
+                if metric != nil && isKafkaMetric(metric.Name) {
+                        metrics = append(metrics, *metric)
                 }
         }
 
         return metrics
+}
+
+// parseMetricLine parses a single Prometheus metric line
+func parseMetricLine(line string) *Metric {
+        // Find the last space to separate value from metric name + labels
+        lastSpaceIndex := strings.LastIndex(line, " ")
+        if lastSpaceIndex == -1 {
+                return nil
+        }
+
+        metricPart := strings.TrimSpace(line[:lastSpaceIndex])
+        value := strings.TrimSpace(line[lastSpaceIndex+1:])
+
+        // Parse metric name and labels
+        var name, labels string
+        
+        // Check if there are labels (contains '{' and '}')
+        if braceStart := strings.Index(metricPart, "{"); braceStart != -1 {
+                name = metricPart[:braceStart]
+                
+                // Find the closing brace
+                braceEnd := strings.LastIndex(metricPart, "}")
+                if braceEnd > braceStart {
+                        labels = metricPart[braceStart+1:braceEnd]
+                }
+        } else {
+                name = metricPart
+                labels = ""
+        }
+
+        return &Metric{
+                Name:   name,
+                Labels: labels,
+                Value:  value,
+        }
 }
 
 // isKafkaMetric checks if a metric is relevant for Kafka monitoring
@@ -215,6 +250,9 @@ func isKafkaMetric(metricName string) bool {
                 "jvm_gc_",
                 "process_cpu_",
                 "process_resident_memory_",
+                "process_open_fds",
+                "process_max_fds",
+                "process_virtual_memory_",
         }
 
         for _, prefix := range kafkaMetricPrefixes {
@@ -227,29 +265,28 @@ func isKafkaMetric(metricName string) bool {
 }
 
 // displayMetrics formats and displays the parsed metrics
-func displayMetrics(metrics map[string]string) {
+func displayMetrics(metrics []Metric) {
         if len(metrics) == 0 {
                 fmt.Println("No Kafka metrics found")
                 return
         }
 
         formatter := getFormatter()
-        headers := []string{"Metric", "Value"}
+        headers := []string{"Metric", "Labels", "Value"}
         var rows [][]string
 
-        // Sort metrics for consistent output
-        var sortedKeys []string
-        for key := range metrics {
-                sortedKeys = append(sortedKeys, key)
-        }
-        sort.Strings(sortedKeys)
+        // Sort metrics by name for consistent output
+        sort.Slice(metrics, func(i, j int) bool {
+                return metrics[i].Name < metrics[j].Name
+        })
 
-        for _, key := range sortedKeys {
-                // Clean up metric name for display
-                displayName := strings.ReplaceAll(key, "_", " ")
-                displayName = strings.Title(displayName)
-
-                rows = append(rows, []string{displayName, metrics[key]})
+        for _, metric := range metrics {
+                labels := metric.Labels
+                if labels == "" {
+                        labels = "-"
+                }
+                
+                rows = append(rows, []string{metric.Name, labels, metric.Value})
         }
 
         formatter.OutputTable(headers, rows)
