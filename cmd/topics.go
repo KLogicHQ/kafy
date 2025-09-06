@@ -2,6 +2,7 @@ package cmd
 
 import (
         "fmt"
+        "sort"
         "strconv"
         "strings"
 
@@ -408,8 +409,16 @@ var topicsConfigsGetCmd = &cobra.Command{
                 headers := []string{"Config Key", "Value", "Source"}
                 var rows [][]string
 
-                for key, value := range configs {
-                        rows = append(rows, []string{key, value, "topic"})
+                // Get all keys and sort them alphabetically
+                keys := make([]string, 0, len(configs))
+                for key := range configs {
+                        keys = append(keys, key)
+                }
+                sort.Strings(keys)
+
+                // Add rows in alphabetical order
+                for _, key := range keys {
+                        rows = append(rows, []string{key, configs[key], "topic"})
                 }
 
                 formatter.OutputTable(headers, rows)
