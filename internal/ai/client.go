@@ -103,64 +103,43 @@ func (c *Client) AnalyzeMetrics(metrics []Metric) (*MetricsAnalysis, error) {
 
 // buildAnalysisPrompt creates a structured prompt for metrics analysis
 func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
-        var metricsData strings.Builder
+        // Convert metrics to compact JSON format to reduce token usage
+        type MetricData struct {
+                Kafka   []map[string]string `json:"k,omitempty"`
+                JVM     []map[string]string `json:"j,omitempty"`
+                Process []map[string]string `json:"p,omitempty"`
+        }
         
-        // Group metrics by category for better analysis
-        kafkaMetrics := []Metric{}
-        jvmMetrics := []Metric{}
-        processMetrics := []Metric{}
+        data := MetricData{}
         
-        for _, metric := range metrics {
-                if strings.HasPrefix(metric.Name, "kafka_") {
-                        kafkaMetrics = append(kafkaMetrics, metric)
-                } else if strings.HasPrefix(metric.Name, "jvm_") {
-                        jvmMetrics = append(jvmMetrics, metric)
-                } else if strings.HasPrefix(metric.Name, "process_") {
-                        processMetrics = append(processMetrics, metric)
+        // Group and format metrics compactly
+        for _, m := range metrics {
+                metric := map[string]string{
+                        "n": m.Name,
+                        "v": m.Value,
+                }
+                if m.Labels != "" {
+                        metric["l"] = m.Labels
+                }
+                
+                if strings.HasPrefix(m.Name, "kafka_") {
+                        data.Kafka = append(data.Kafka, metric)
+                } else if strings.HasPrefix(m.Name, "jvm_") {
+                        data.JVM = append(data.JVM, metric)
+                } else if strings.HasPrefix(m.Name, "process_") {
+                        data.Process = append(data.Process, metric)
                 }
         }
         
-        metricsData.WriteString("Kafka Broker Metrics Analysis Request\n\n")
-        metricsData.WriteString("KAFKA METRICS:\n")
-        for _, m := range kafkaMetrics {
-                metricsData.WriteString(fmt.Sprintf("%s{%s} = %s\n", m.Name, m.Labels, m.Value))
-        }
+        // Convert to compact JSON
+        jsonData, _ := json.Marshal(data)
         
-        metricsData.WriteString("\nJVM METRICS:\n")
-        for _, m := range jvmMetrics {
-                metricsData.WriteString(fmt.Sprintf("%s{%s} = %s\n", m.Name, m.Labels, m.Value))
-        }
-        
-        metricsData.WriteString("\nPROCESS METRICS:\n")
-        for _, m := range processMetrics {
-                metricsData.WriteString(fmt.Sprintf("%s{%s} = %s\n", m.Name, m.Labels, m.Value))
-        }
-        
-        return fmt.Sprintf(`You are a Kafka expert analyzing broker metrics. Based on the following Prometheus metrics data, provide a detailed analysis.
+        return fmt.Sprintf(`Role: Kafka monitoring expert. Analyze broker metrics JSON (n=name,v=value,l=labels,k=kafka,j=jvm,p=process).
 
 %s
 
-Please analyze these metrics and provide:
-
-1. **ISSUES IDENTIFIED**: List any performance issues, bottlenecks, or concerning metric values
-2. **ROOT CAUSE ANALYSIS**: Explain what might be causing these issues
-3. **RECOMMENDATIONS**: Provide specific, actionable recommendations to address the issues
-4. **SUMMARY**: Brief overall health assessment
-
-Focus on:
-- Memory usage and garbage collection patterns
-- Disk I/O and log segment management
-- Network throughput and request latencies
-- Consumer lag and replication issues
-- Resource utilization trends
-
-Respond in JSON format:
-{
-  "issues": ["issue1", "issue2"],
-  "root_causes": ["cause1", "cause2"],
-  "recommendations": ["rec1", "rec2"],
-  "summary": "overall assessment"
-}`, metricsData.String())
+Provide analysis in JSON:
+{"issues":[],"root_causes":[],"recommendations":[],"summary":""}`, string(jsonData))
 }
 
 // Metric represents a parsed metric for AI analysis
@@ -176,11 +155,15 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
                 "model": c.Model,
                 "messages": []map[string]string{
                         {
+                                "role":    "system",
+                                "content": "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations.",
+                        },
+                        {
                                 "role":    "user",
                                 "content": prompt,
                         },
                 },
-                "max_tokens":   2000,
+                "max_tokens":   1500,
                 "temperature":  0.3,
         }
         
@@ -209,7 +192,8 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
 func (c *Client) callClaudeAPI(prompt string) (*MetricsAnalysis, error) {
         payload := map[string]interface{}{
                 "model":      c.Model,
-                "max_tokens": 2000,
+                "max_tokens": 1500,
+                "system":     "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations.",
                 "messages": []map[string]string{
                         {
                                 "role":    "user",
@@ -239,11 +223,14 @@ func (c *Client) callClaudeAPI(prompt string) (*MetricsAnalysis, error) {
 
 // Gemini API call
 func (c *Client) callGeminiAPI(prompt string) (*MetricsAnalysis, error) {
+        systemPrompt := "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations."
+        fullPrompt := systemPrompt + "\n\n" + prompt
+        
         payload := map[string]interface{}{
                 "contents": []map[string]interface{}{
                         {
                                 "parts": []map[string]string{
-                                        {"text": prompt},
+                                        {"text": fullPrompt},
                                 },
                         },
                 },
