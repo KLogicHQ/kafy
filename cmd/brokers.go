@@ -66,7 +66,7 @@ var brokersDescribeCmd = &cobra.Command{
                 if err != nil {
                         return fmt.Errorf("invalid broker ID: %s", brokerIDStr)
                 }
-                
+
                 cfg, err := config.LoadConfig()
                 if err != nil {
                         return err
@@ -93,7 +93,7 @@ var brokersDescribeCmd = &cobra.Command{
                         formatter.OutputTable(headers, rows)
                         return nil
                 }
-                
+
                 return formatter.Output(broker)
         },
 }
@@ -108,7 +108,7 @@ var brokersMetricsCmd = &cobra.Command{
                 if err != nil {
                         return fmt.Errorf("invalid broker ID: %s", brokerIDStr)
                 }
-                
+
                 cfg, err := config.LoadConfig()
                 if err != nil {
                         return err
@@ -120,7 +120,7 @@ var brokersMetricsCmd = &cobra.Command{
                 }
 
                 if cluster.BrokerMetricsPort == 0 {
-                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kaf config add <cluster> --broker-metrics-port <port>")
+                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kaf config update <cluster> --broker-metrics-port <port>")
                 }
 
                 client, err := kafka.NewClient(cfg)
@@ -153,24 +153,24 @@ var brokersMetricsCmd = &cobra.Command{
 // fetchAndDisplayMetrics retrieves and parses Prometheus metrics from a broker
 func fetchAndDisplayMetrics(brokerHost string, metricsPort int) error {
         url := fmt.Sprintf("http://%s:%d/metrics", brokerHost, metricsPort)
-        
+
         client := &http.Client{
                 Timeout: 10 * time.Second,
         }
-        
+
         resp, err := client.Get(url)
         if err != nil {
                 return fmt.Errorf("failed to fetch metrics from %s: %w", url, err)
         }
         defer resp.Body.Close()
-        
+
         if resp.StatusCode != http.StatusOK {
                 return fmt.Errorf("metrics endpoint returned status %d", resp.StatusCode)
         }
-        
+
         metrics := parsePrometheusMetrics(resp)
         displayMetrics(metrics)
-        
+
         return nil
 }
 
@@ -178,28 +178,28 @@ func fetchAndDisplayMetrics(brokerHost string, metricsPort int) error {
 func parsePrometheusMetrics(resp *http.Response) map[string]string {
         metrics := make(map[string]string)
         scanner := bufio.NewScanner(resp.Body)
-        
+
         for scanner.Scan() {
                 line := strings.TrimSpace(scanner.Text())
-                
+
                 // Skip comments and empty lines
                 if strings.HasPrefix(line, "#") || line == "" {
                         continue
                 }
-                
+
                 // Parse metric line: metric_name{labels} value
                 parts := strings.Fields(line)
                 if len(parts) >= 2 {
                         metricName := parts[0]
                         value := parts[1]
-                        
+
                         // Only include key Kafka metrics
                         if isKafkaMetric(metricName) {
                                 metrics[metricName] = value
                         }
                 }
         }
-        
+
         return metrics
 }
 
@@ -216,13 +216,13 @@ func isKafkaMetric(metricName string) bool {
                 "process_cpu_",
                 "process_resident_memory_",
         }
-        
+
         for _, prefix := range kafkaMetricPrefixes {
                 if strings.HasPrefix(metricName, prefix) {
                         return true
                 }
         }
-        
+
         return false
 }
 
@@ -232,26 +232,26 @@ func displayMetrics(metrics map[string]string) {
                 fmt.Println("No Kafka metrics found")
                 return
         }
-        
+
         formatter := getFormatter()
         headers := []string{"Metric", "Value"}
         var rows [][]string
-        
+
         // Sort metrics for consistent output
         var sortedKeys []string
         for key := range metrics {
                 sortedKeys = append(sortedKeys, key)
         }
         sort.Strings(sortedKeys)
-        
+
         for _, key := range sortedKeys {
                 // Clean up metric name for display
                 displayName := strings.ReplaceAll(key, "_", " ")
                 displayName = strings.Title(displayName)
-                
+
                 rows = append(rows, []string{displayName, metrics[key]})
         }
-        
+
         formatter.OutputTable(headers, rows)
 }
 
@@ -302,7 +302,7 @@ var brokersConfigsGetCmd = &cobra.Command{
         Args:  cobra.ExactArgs(1),
         RunE: func(cmd *cobra.Command, args []string) error {
                 brokerID := args[0]
-                
+
                 cfg, err := config.LoadConfig()
                 if err != nil {
                         return err
@@ -338,15 +338,15 @@ var brokersConfigsSetCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 brokerID := args[0]
                 configPair := args[1]
-                
+
                 parts := strings.SplitN(configPair, "=", 2)
                 if len(parts) != 2 {
                         return fmt.Errorf("config must be in format key=value")
                 }
-                
+
                 key := parts[0]
                 value := parts[1]
-                
+
                 cfg, err := config.LoadConfig()
                 if err != nil {
                         return err
