@@ -34,6 +34,7 @@ producers, consumers, and cluster administration.
 //   brokers       Inspect and manage Kafka brokers
 //   offsets       View and manage topic/partition offsets
 //   health        Check cluster health and connectivity
+//   tail          Tail messages in real-time (like tail -f)
 //   util          Utility commands for cluster administration
 
 // ADDITIONAL COMMANDS:
@@ -47,6 +48,7 @@ producers, consumers, and cluster administration.
 //   $ kaf topics create orders --partitions 3 --replication 2
 //   $ kaf produce orders --count 10
 //   $ kaf consume orders --from-beginning --limit 5
+//   $ kaf tail orders
 //   $ kaf groups list
 //   $ kaf brokers list`,
                 SilenceUsage: true,
@@ -79,6 +81,7 @@ func init() {
         rootCmd.AddCommand(brokersCmd)
         rootCmd.AddCommand(offsetsCmd)
         rootCmd.AddCommand(healthCmd)
+        rootCmd.AddCommand(tailCmd)
         rootCmd.AddCommand(utilCmd)
 }
 
