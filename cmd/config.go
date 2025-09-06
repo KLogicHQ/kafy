@@ -31,7 +31,7 @@ var configListCmd = &cobra.Command{
                         return nil
                 }
 
-                headers := []string{"Name", "Bootstrap", "Current"}
+                headers := []string{"Name", "Bootstrap", "Zookeeper", "Metrics Port", "Current"}
                 var rows [][]string
                 
                 for name, cluster := range cfg.Clusters {
@@ -39,7 +39,18 @@ var configListCmd = &cobra.Command{
                         if name == cfg.CurrentContext {
                                 current = "*"
                         }
-                        rows = append(rows, []string{name, cluster.Bootstrap, current})
+                        
+                        zookeeper := cluster.Zookeeper
+                        if zookeeper == "" {
+                                zookeeper = "-"
+                        }
+                        
+                        metricsPort := "-"
+                        if cluster.BrokerMetricsPort > 0 {
+                                metricsPort = fmt.Sprintf("%d", cluster.BrokerMetricsPort)
+                        }
+                        
+                        rows = append(rows, []string{name, cluster.Bootstrap, zookeeper, metricsPort, current})
                 }
 
                 formatter.OutputTable(headers, rows)
