@@ -304,7 +304,7 @@ kaf tail orders
 | `kaf brokers list` | List all brokers | Show broker IDs and connection info |
 | `kaf brokers describe <broker-id>` | Show broker details | `kaf brokers describe 1` |
 | `kaf brokers metrics <broker-id>` | Show broker Prometheus metrics | `kaf brokers metrics 1` (requires --broker-metrics-port) |
-| `kaf brokers metrics <broker-id> --analyze` | AI-powered metrics analysis | `kaf brokers metrics 1 --analyze --provider openai` |
+| `kaf brokers metrics <broker-id> --analyze` | AI-powered metrics analysis | `kaf brokers metrics 1 --analyze --provider openai --model gpt-4o` |
 
 ### Broker Configuration Commands
 
@@ -556,11 +556,15 @@ kaf brokers metrics 1                    # Kafka server and JVM metrics
 kaf brokers metrics 2                    # Network I/O and process stats
 
 # AI-powered metrics analysis (optional)
-export OPENAI_API_KEY="your-openai-key"   # Configure API key
-kaf brokers metrics 1 --analyze           # OpenAI analysis (default)
-kaf brokers metrics 1 --analyze --provider claude    # Use Claude
-kaf brokers metrics 1 --analyze --provider grok      # Use Grok
-kaf brokers metrics 1 --analyze --provider gemini    # Use Gemini
+export OPENAI_API_KEY="your-openai-key"              # Configure API key
+kaf brokers metrics 1 --analyze                      # OpenAI analysis with gpt-4o (default)
+kaf brokers metrics 1 --analyze --provider claude    # Use Claude with default model
+kaf brokers metrics 1 --analyze --provider grok      # Use Grok with default model
+kaf brokers metrics 1 --analyze --provider gemini    # Use Gemini with default model
+
+# Custom model examples
+kaf brokers metrics 1 --analyze --model gpt-4o-mini        # Use cheaper OpenAI model
+kaf brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307  # Use faster Claude model
 ```
 
 ### AI-Powered Metrics Analysis
@@ -569,12 +573,12 @@ The broker metrics command supports optional AI analysis to provide intelligent 
 
 #### Supported AI Providers
 
-| Provider | Environment Variable | Model Used |
-|----------|---------------------|------------|
-| **OpenAI** (default) | `OPENAI_API_KEY` | GPT-4 |
-| **Claude** | `ANTHROPIC_API_KEY` | Claude-3-Sonnet |
-| **Grok** | `XAI_API_KEY` | Grok-Beta |
-| **Gemini** | `GOOGLE_API_KEY` | Gemini-Pro |
+| Provider | Environment Variable | Default Model |
+|----------|---------------------|---------------|
+| **OpenAI** (default) | `OPENAI_API_KEY` | gpt-4o |
+| **Claude** | `ANTHROPIC_API_KEY` | claude-3-sonnet-20240229 |
+| **Grok** | `XAI_API_KEY` | grok-beta |
+| **Gemini** | `GOOGLE_API_KEY` | gemini-pro |
 
 #### Setup Instructions
 
@@ -595,11 +599,16 @@ The broker metrics command supports optional AI analysis to provide intelligent 
 
 2. **Use AI Analysis**: Add the `--analyze` flag to any metrics command:
    ```bash
-   # Basic AI analysis with OpenAI
+   # Basic AI analysis with OpenAI (uses gpt-4o by default)
    kaf brokers metrics 1 --analyze
    
-   # Use specific AI provider
+   # Use specific AI provider with default model
    kaf brokers metrics 1 --analyze --provider claude
+   
+   # Use specific AI provider with custom model
+   kaf brokers metrics 1 --analyze --provider openai --model gpt-4o-mini
+   kaf brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307
+   kaf brokers metrics 1 --analyze --provider gemini --model gemini-1.5-pro
    ```
 
 #### Analysis Output
