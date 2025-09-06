@@ -242,7 +242,7 @@ func displayPartitionInfo(metadata interface{}, targetTopic string) error {
                 return nil
         }
 
-        headers := []string{"TOPIC", "PARTITION", "LEADER", "REPLICAS", "ISRS"}
+        headers := []string{"TOPIC", "PARTITION", "LEADER", "REPLICAS", "ISRS", "INSYNC"}
         var rows [][]string
 
         for _, topic := range topics {
@@ -269,12 +269,35 @@ func displayPartitionInfo(metadata interface{}, targetTopic string) error {
                                 isrStrs[i] = fmt.Sprintf("%d", isr)
                         }
                         
+                        // Calculate insync status by comparing replicas and ISRs
+                        insync := "no"
+                        if len(replicas) == len(isrs) {
+                                // Create maps for comparison
+                                replicaSet := make(map[int32]bool)
+                                for _, r := range replicas {
+                                        replicaSet[r] = true
+                                }
+                                
+                                allInSync := true
+                                for _, isr := range isrs {
+                                        if !replicaSet[isr] {
+                                                allInSync = false
+                                                break
+                                        }
+                                }
+                                
+                                if allInSync {
+                                        insync = "yes"
+                                }
+                        }
+                        
                         row := []string{
                                 topicName,
                                 fmt.Sprintf("%v", partition["id"]),
                                 fmt.Sprintf("%v", partition["leader"]),
                                 "[" + strings.Join(replicaStrs, ",") + "]",
                                 "[" + strings.Join(isrStrs, ",") + "]",
+                                insync,
                         }
                         rows = append(rows, row)
                 }

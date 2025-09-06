@@ -61,7 +61,12 @@ func completeGroups(cmd *cobra.Command, args []string, toComplete string) ([]str
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
-        return groups, cobra.ShellCompDirectiveNoFileComp
+        var groupNames []string
+        for _, group := range groups {
+                groupNames = append(groupNames, group.GroupID)
+        }
+        
+        return groupNames, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeClusters provides completion for cluster names

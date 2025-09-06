@@ -202,12 +202,12 @@ func checkGroups() error {
                 group := groups[i]
                 
                 // Try to describe group to verify accessibility
-                _, err := client.DescribeConsumerGroup(group)
+                _, err := client.DescribeConsumerGroup(group.GroupID)
                 if err != nil {
-                        fmt.Printf("  ⚠ Group '%s': %v\n", group, err)
+                        fmt.Printf("  ⚠ Group '%s': %v\n", group.GroupID, err)
                 } else {
                         healthy++
-                        fmt.Printf("  ✓ Group '%s': accessible\n", group)
+                        fmt.Printf("  ✓ Group '%s': accessible\n", group.GroupID)
                 }
         }
         

@@ -36,11 +36,15 @@ var groupsListCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
-                headers := []string{"Group ID"}
+                headers := []string{"Group ID", "State", "Members"}
                 var rows [][]string
 
                 for _, group := range groups {
-                        rows = append(rows, []string{group})
+                        rows = append(rows, []string{
+                                group.GroupID,
+                                group.State,
+                                strconv.Itoa(group.MemberCount),
+                        })
                 }
 
                 formatter.OutputTable(headers, rows)

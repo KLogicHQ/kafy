@@ -99,6 +99,12 @@ type ConsumerGroupInfo struct {
         Lag       map[string]map[int32]int64 // topic -> partition -> lag
 }
 
+type ConsumerGroupSummary struct {
+        GroupID     string
+        State       string
+        MemberCount int
+}
+
 type ConsumerMemberInfo struct {
         MemberID   string
         ClientID   string
@@ -302,7 +308,7 @@ func (c *Client) DeleteTopic(name string) error {
         return nil
 }
 
-func (c *Client) ListConsumerGroups() ([]string, error) {
+func (c *Client) ListConsumerGroups() ([]ConsumerGroupSummary, error) {
         adminClient, err := c.CreateAdminClient()
         if err != nil {
                 return nil, err
@@ -315,20 +321,99 @@ func (c *Client) ListConsumerGroups() ([]string, error) {
                 return nil, err
         }
 
-        var groups []string
+        // Get detailed info for each group to include member count and state
+        var groupIDs []string
         for _, group := range result.Valid {
-                groups = append(groups, group.GroupID)
+                groupIDs = append(groupIDs, group.GroupID)
+        }
+        
+        if len(groupIDs) == 0 {
+                return []ConsumerGroupSummary{}, nil
+        }
+        
+        // Describe all groups to get their states and member counts
+        groupDescsResult, err := adminClient.DescribeConsumerGroups(ctx, groupIDs)
+        if err != nil {
+                // Fallback to simple group list if describe fails
+                var groups []ConsumerGroupSummary
+                for _, group := range result.Valid {
+                        groups = append(groups, ConsumerGroupSummary{
+                                GroupID:     group.GroupID,
+                                State:       "Unknown",
+                                MemberCount: 0,
+                        })
+                }
+                return groups, nil
+        }
+        
+        var groups []ConsumerGroupSummary
+        for _, groupDesc := range groupDescsResult.ConsumerGroupDescriptions {
+                if groupDesc.Error.Code() == kafka.ErrNoError {
+                        groups = append(groups, ConsumerGroupSummary{
+                                GroupID:     groupDesc.GroupID,
+                                State:       groupDesc.State.String(),
+                                MemberCount: len(groupDesc.Members),
+                        })
+                }
         }
 
         return groups, nil
 }
 
 func (c *Client) DescribeConsumerGroup(groupID string) (*ConsumerGroupInfo, error) {
-        // For now, return basic info - full implementation would require more API research
+        adminClient, err := c.CreateAdminClient()
+        if err != nil {
+                return nil, err
+        }
+        defer adminClient.Close()
+
+        ctx := context.Background()
+        groups := []string{groupID}
+        
+        result, err := adminClient.DescribeConsumerGroups(ctx, groups)
+        if err != nil {
+                return nil, err
+        }
+
+        if len(result.ConsumerGroupDescriptions) == 0 {
+                return nil, fmt.Errorf("consumer group '%s' not found", groupID)
+        }
+
+        groupDesc := result.ConsumerGroupDescriptions[0]
+        if groupDesc.Error.Code() != kafka.ErrNoError {
+                return nil, fmt.Errorf("error describing group: %s", groupDesc.Error.String())
+        }
+
         groupInfo := &ConsumerGroupInfo{
-                GroupID: groupID,
-                State:   "Active",
+                GroupID: groupDesc.GroupID,
+                State:   groupDesc.State.String(),
                 Members: make([]ConsumerMemberInfo, 0),
+        }
+
+        // Convert members
+        for _, member := range groupDesc.Members {
+                memberInfo := ConsumerMemberInfo{
+                        MemberID: member.ConsumerID,
+                        ClientID: member.ClientID,
+                        Host:     member.Host,
+                        Assignment: make([]TopicPartition, 0),
+                }
+                
+                // Parse member assignment if available
+                if member.Assignment.TopicPartitions != nil {
+                        for _, tp := range member.Assignment.TopicPartitions {
+                                topic := ""
+                                if tp.Topic != nil {
+                                        topic = *tp.Topic
+                                }
+                                memberInfo.Assignment = append(memberInfo.Assignment, TopicPartition{
+                                        Topic:     topic,
+                                        Partition: tp.Partition,
+                                })
+                        }
+                }
+                
+                groupInfo.Members = append(groupInfo.Members, memberInfo)
         }
 
         return groupInfo, nil
