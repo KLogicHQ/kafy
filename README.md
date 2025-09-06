@@ -173,6 +173,10 @@ kaf config current
 # List all topics
 kaf topics list
 
+# View partition details with insync status
+kaf topics partitions              # All topics
+kaf topics partitions orders       # Specific topic
+
 # Create a new topic
 kaf topics create orders --partitions 3 --replication 2
 
@@ -227,6 +231,49 @@ kaf consume orders --output json --limit 5
 kaf tail orders
 ```
 
+## 🆕 Recent Enhancements
+
+### Enhanced Partition Management
+
+- **`kaf topics partitions`** - New command showing detailed partition information:
+  - **INSYNC Status**: Automatically calculates "yes/no" based on REPLICAS and ISR array matches
+  - **All Topics**: View partition details across all topics in the cluster
+  - **Single Topic**: Focus on partitions for a specific topic
+  - **Complete Details**: Shows topic, partition ID, leader, replicas, ISRs, and sync status
+
+```bash
+# Example output:
+# TOPIC     | PARTITION | LEADER | REPLICAS | ISRS     | INSYNC
+# orders    | 0         | 1      | [1,2,3]  | [1,2,3]  | yes
+# orders    | 1         | 2      | [2,3,1]  | [2,3]    | no
+```
+
+### Enhanced Consumer Group Management
+
+- **`kaf groups list`** - Now shows comprehensive group information:
+  - **Group State**: Real-time state (Active, PreparingRebalance, etc.)
+  - **Member Count**: Total number of active group members
+  - **Real-time Data**: Uses Kafka admin API for accurate information
+
+- **`kaf groups describe`** - Enhanced member details display:
+  - **Member Information**: Shows Member ID, Client ID, and Host
+  - **Topic Assignments**: Displays assigned topic:partition pairs
+  - **Two-table Format**: Summary table + detailed members table
+  - **Complete Visibility**: Full consumer group health monitoring
+
+```bash
+# Enhanced groups list output:
+# Group ID          | State    | Members
+# payment-service   | Active   | 3
+# user-processor    | Rebalancing | 0
+
+# Enhanced groups describe output includes member details:
+# === MEMBERS ===
+# Member ID        | Client ID    | Host           | Assignments
+# consumer-1-abc   | my-service   | app-1.local    | orders:0, orders:1
+# consumer-2-def   | my-service   | app-2.local    | orders:2
+```
+
 ## 📖 Complete Command Reference
 
 ### Configuration Management
@@ -248,6 +295,7 @@ kaf tail orders
 |---------|-------------|----------|
 | `kaf topics list` | List all topics | Show topics with partition/replication info |
 | `kaf topics describe <topic>` | Show detailed topic information | `kaf topics describe orders` |
+| `kaf topics partitions [topic]` | Show partition details with insync status | `kaf topics partitions orders` or `kaf topics partitions` |
 | `kaf topics create <topic>` | Create new topic | `kaf topics create events --partitions 6 --replication 3` |
 | `kaf topics delete <topic>` | Delete topic | `kaf topics delete test-topic --force` |
 | `kaf topics alter <topic>` | Modify topic settings | `kaf topics alter orders --partitions 10` |
@@ -265,8 +313,8 @@ kaf tail orders
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf groups list` | List all consumer groups | Show groups with member counts |
-| `kaf groups describe <group>` | Show detailed group information | `kaf groups describe my-service` |
+| `kaf groups list` | List all consumer groups | Show groups with states and member counts |
+| `kaf groups describe <group>` | Show detailed group information with members | `kaf groups describe my-service` |
 | `kaf groups lag <group>` | Show consumer lag metrics | `kaf groups lag payment-processor` |
 | `kaf groups reset <group>` | Reset consumer offsets | `kaf groups reset my-group --to-earliest` |
 | `kaf groups delete <group>` | Delete consumer group | `kaf groups delete inactive-group` |
