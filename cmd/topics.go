@@ -202,6 +202,97 @@ var topicsAlterCmd = &cobra.Command{
         },
 }
 
+var topicsPartitionsCmd = &cobra.Command{
+        Use:   "partitions [topic]",
+        Short: "Show partition details for all topics or a specific topic",
+        Args:  cobra.MaximumNArgs(1),
+        ValidArgsFunction: completeTopics,
+        RunE: func(cmd *cobra.Command, args []string) error {
+                cfg, err := config.LoadConfig()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafka.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                metadata, err := client.DumpMetadata()
+                if err != nil {
+                        return err
+                }
+
+                // Filter for specific topic if provided
+                var targetTopic string
+                if len(args) > 0 {
+                        targetTopic = args[0]
+                }
+
+                return displayPartitionInfo(metadata, targetTopic)
+        },
+}
+
+func displayPartitionInfo(metadata interface{}, targetTopic string) error {
+        data := metadata.(map[string]interface{})
+        topics := data["topics"].([]map[string]interface{})
+        
+        if len(topics) == 0 {
+                fmt.Println("No topics found")
+                return nil
+        }
+
+        headers := []string{"TOPIC", "PARTITION", "LEADER", "REPLICAS", "ISRS"}
+        var rows [][]string
+
+        for _, topic := range topics {
+                topicName := fmt.Sprintf("%v", topic["name"])
+                
+                // Skip if we're looking for a specific topic and this isn't it
+                if targetTopic != "" && topicName != targetTopic {
+                        continue
+                }
+                
+                partitions := topic["partitions"].([]map[string]interface{})
+                
+                for _, partition := range partitions {
+                        replicas := partition["replicas"].([]int32)
+                        isrs := partition["isrs"].([]int32)
+                        
+                        replicaStrs := make([]string, len(replicas))
+                        for i, r := range replicas {
+                                replicaStrs[i] = fmt.Sprintf("%d", r)
+                        }
+                        
+                        isrStrs := make([]string, len(isrs))
+                        for i, isr := range isrs {
+                                isrStrs[i] = fmt.Sprintf("%d", isr)
+                        }
+                        
+                        row := []string{
+                                topicName,
+                                fmt.Sprintf("%v", partition["id"]),
+                                fmt.Sprintf("%v", partition["leader"]),
+                                "[" + strings.Join(replicaStrs, ",") + "]",
+                                "[" + strings.Join(isrStrs, ",") + "]",
+                        }
+                        rows = append(rows, row)
+                }
+        }
+
+        if len(rows) == 0 {
+                if targetTopic != "" {
+                        fmt.Printf("Topic '%s' not found\n", targetTopic)
+                } else {
+                        fmt.Println("No partition information found")
+                }
+                return nil
+        }
+
+        getFormatter().OutputTable(headers, rows)
+        return nil
+}
+
 // Topic config commands
 var topicsConfigsCmd = &cobra.Command{
         Use:   "configs",
@@ -371,12 +462,14 @@ func init() {
         topicsCmd.AddCommand(topicsCreateCmd)
         topicsCmd.AddCommand(topicsDeleteCmd)
         topicsCmd.AddCommand(topicsAlterCmd)
+        topicsCmd.AddCommand(topicsPartitionsCmd)
         topicsCmd.AddCommand(topicsConfigsCmd)
 
         // Add completion support
         topicsDescribeCmd.ValidArgsFunction = completeTopics
         topicsDeleteCmd.ValidArgsFunction = completeTopics
         topicsAlterCmd.ValidArgsFunction = completeTopics
+        topicsPartitionsCmd.ValidArgsFunction = completeTopics
         topicsConfigsGetCmd.ValidArgsFunction = completeTopics
         topicsConfigsSetCmd.ValidArgsFunction = completeTopics
         topicsConfigsDeleteCmd.ValidArgsFunction = completeTopics
