@@ -171,7 +171,7 @@ func (c *Client) buildAnalysisPrompt(metrics []Metric) string {
 
 %s
 
-Provide analysis in JSON:
+Provide analysis in valid JSON format only. Do not include any text outside the JSON object:
 {"issues":[],"root_causes":[],"recommendations":[],"summary":""}`, string(jsonData))
 }
 
@@ -196,8 +196,16 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
                                 "content": prompt,
                         },
                 },
-                "max_tokens":   1500,
-                "temperature":  0.3,
+                "response_format": map[string]string{
+                        "type": "json_object",
+                },
+        }
+        
+        // Only add max_tokens and temperature for models below GPT-5
+        // GPT-5, GPT-5-mini, GPT-5-nano don't support these parameters
+        if !strings.HasPrefix(strings.ToLower(c.Model), "gpt-5") && !strings.Contains(strings.ToLower(c.Model), "o1") {
+                payload["max_tokens"] = 1500
+                payload["temperature"] = 0.3
         }
 
         return c.makeAPICall(payload, func(body []byte) (*MetricsAnalysis, error) {
@@ -223,14 +231,17 @@ func (c *Client) callOpenAIAPI(prompt string) (*MetricsAnalysis, error) {
 
 // Claude API call
 func (c *Client) callClaudeAPI(prompt string) (*MetricsAnalysis, error) {
+        // Update prompt to ensure JSON response
+        jsonPrompt := prompt + "\n\nRespond only with valid JSON in the exact format specified."
+        
         payload := map[string]interface{}{
                 "model":      c.Model,
                 "max_tokens": 1500,
-                "system":     "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations.",
+                "system":     "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations. Always respond with valid JSON only.",
                 "messages": []map[string]string{
                         {
                                 "role":    "user",
-                                "content": prompt,
+                                "content": jsonPrompt,
                         },
                 },
         }
@@ -256,8 +267,9 @@ func (c *Client) callClaudeAPI(prompt string) (*MetricsAnalysis, error) {
 
 // Gemini API call
 func (c *Client) callGeminiAPI(prompt string) (*MetricsAnalysis, error) {
-        systemPrompt := "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations."
-        fullPrompt := systemPrompt + "\n\n" + prompt
+        systemPrompt := "You are a Kafka monitoring expert. Analyze broker metrics and provide concise recommendations. Always respond with valid JSON only."
+        jsonPrompt := prompt + "\n\nRespond only with valid JSON in the exact format specified."
+        fullPrompt := systemPrompt + "\n\n" + jsonPrompt
 
         payload := map[string]interface{}{
                 "contents": []map[string]interface{}{
@@ -266,6 +278,9 @@ func (c *Client) callGeminiAPI(prompt string) (*MetricsAnalysis, error) {
                                         {"text": fullPrompt},
                                 },
                         },
+                },
+                "generationConfig": map[string]interface{}{
+                        "response_mime_type": "application/json",
                 },
         }
 
