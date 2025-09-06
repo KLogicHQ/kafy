@@ -248,6 +248,32 @@ kaf tail orders
 # orders    | 1         | 2      | [2,3,1]  | [2,3]    | no
 ```
 
+### Enhanced Configuration Management
+
+- **`kaf config update`** - New command for modifying existing cluster configurations:
+  - **Update Any Field**: Modify bootstrap servers, zookeeper, metrics port, or cluster name
+  - **Metrics Port Support**: Add or update `--broker-metrics-port` for Prometheus monitoring
+  - **Rename Clusters**: Change cluster names while preserving all settings
+  - **Context Preservation**: Automatically updates current context when renaming active cluster
+
+- **Enhanced Display**: All config commands now show complete cluster information:
+  - **Metrics Port**: Displays configured Prometheus metrics port in all views
+  - **Zookeeper Settings**: Shows zookeeper configuration when present
+  - **Complete Export**: Import/export preserves all fields including metrics settings
+
+```bash
+# Update cluster settings:
+kaf config update prod --broker-metrics-port 9308 --zookeeper zk-prod:2181
+
+# Rename cluster:
+kaf config update old-name --name new-name
+
+# Enhanced display includes metrics port:
+# Context  Bootstrap        Zookeeper  Metrics Port  Current
+# dev      localhost:9092   -          9308          *
+# prod     kafka-prod:9092  zk:2181    9308
+```
+
 ### Enhanced Consumer Group Management
 
 - **`kaf groups list`** - Now shows comprehensive group information:
@@ -280,10 +306,11 @@ kaf tail orders
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf config list` | List all configured clusters | Show cluster overview with current context |
-| `kaf config current` | Show current active cluster | Display active cluster details |
+| `kaf config list` | List all configured clusters | Show cluster overview with metrics port and current context |
+| `kaf config current` | Show current active cluster | Display active cluster details including metrics port |
 | `kaf config use <name>` | Switch to different cluster | `kaf config use prod` |
 | `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add dev --bootstrap localhost:9092 --broker-metrics-port 9308` |
+| `kaf config update <name>` | Update existing cluster configuration | `kaf config update dev --broker-metrics-port 9309 --zookeeper zk:2181` |
 | `kaf config delete <name>` | Remove cluster | `kaf config delete old-cluster` |
 | `kaf config rename <old> <new>` | Rename cluster | `kaf config rename dev development` |
 | `kaf config export` | Export config to YAML/JSON | Backup or share configurations |
