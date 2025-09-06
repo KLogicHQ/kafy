@@ -1,6 +1,7 @@
 package cmd
 
 import (
+        "encoding/json"
         "fmt"
         "os"
 
@@ -349,32 +350,8 @@ var configExportCmd = &cobra.Command{
                 }
 
                 formatter := getFormatter()
-                if outputFormat == "table" {
-                        // For table output, show structured cluster information
-                        headers := []string{"Context", "Bootstrap", "Zookeeper", "Metrics Port", "Current"}
-                        var rows [][]string
-                        
-                        for name, cluster := range cfg.Clusters {
-                                current := ""
-                                if name == cfg.CurrentContext {
-                                        current = "*"
-                                }
-                                zk := cluster.Zookeeper
-                                if zk == "" {
-                                        zk = "-"
-                                }
-                                metricsPort := "-"
-                                if cluster.BrokerMetricsPort > 0 {
-                                        metricsPort = fmt.Sprintf("%d", cluster.BrokerMetricsPort)
-                                }
-                                rows = append(rows, []string{name, cluster.Bootstrap, zk, metricsPort, current})
-                        }
-                        
-                        formatter.OutputTable(headers, rows)
-                        return nil
-                } else {
-                        return formatter.Output(cfg)
-                }
+                // Always export in structured format (YAML/JSON), never table
+                return formatter.Output(cfg)
         },
 }
 
@@ -391,8 +368,13 @@ var configImportCmd = &cobra.Command{
                 }
 
                 var importedConfig config.Config
-                if err := yaml.Unmarshal(data, &importedConfig); err != nil {
-                        return fmt.Errorf("failed to parse config file: %w", err)
+                
+                // Try JSON first, then YAML if JSON fails
+                if err := json.Unmarshal(data, &importedConfig); err != nil {
+                        // If JSON fails, try YAML
+                        if yamlErr := yaml.Unmarshal(data, &importedConfig); yamlErr != nil {
+                                return fmt.Errorf("failed to parse config file as JSON or YAML: JSON error: %w, YAML error: %v", err, yamlErr)
+                        }
                 }
 
                 // Load existing config

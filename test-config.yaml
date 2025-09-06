@@ -1,0 +1,6 @@
+CurrentContext: test2
+Clusters:
+  test2:
+    Bootstrap: localhost:9093
+    Zookeeper: ""
+    Security: null
