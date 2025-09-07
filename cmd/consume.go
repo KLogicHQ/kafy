@@ -79,7 +79,14 @@ var consumeCmd = &cobra.Command{
                 for {
                         select {
                         case sig := <-sigChan:
-                                fmt.Printf("\nCaught signal %v: terminating\n", sig)
+                                fmt.Printf("\nCaught signal %v: cleaning up and terminating\n", sig)
+                                // Clean up auto-generated consumer group (only if it was auto-generated)
+                                originalGroup, _ := cmd.Flags().GetString("group")
+                                if originalGroup == "" { // Only delete if group was auto-generated
+                                        if err := client.DeleteConsumerGroup(group); err != nil {
+                                                fmt.Printf("Warning: Failed to delete consumer group '%s': %v\n", group, err)
+                                        }
+                                }
                                 return nil
                         default:
                                 msg, err := consumer.ReadMessage(100 * time.Millisecond)

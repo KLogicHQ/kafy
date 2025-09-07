@@ -427,7 +427,30 @@ func (c *Client) GetConsumerGroupLag(groupID string) (map[string]map[int32]int64
 }
 
 func (c *Client) DeleteConsumerGroup(groupID string) error {
-        // For now, return success - full implementation would require proper API usage
+        adminClient, err := c.CreateAdminClient()
+        if err != nil {
+                return err
+        }
+        defer adminClient.Close()
+
+        ctx := context.Background()
+        result, err := adminClient.DeleteConsumerGroups(ctx, []string{groupID})
+        if err != nil {
+                return err
+        }
+
+        // Check the result for each group
+        if len(result.ConsumerGroupResults) > 0 {
+                groupResult := result.ConsumerGroupResults[0]
+                if groupResult.Error.Code() != kafka.ErrNoError {
+                        // Don't return error if group doesn't exist (already deleted)
+                        if groupResult.Error.Code() == kafka.ErrGroupIDNotFound {
+                                return nil
+                        }
+                        return fmt.Errorf("failed to delete consumer group '%s': %s", groupID, groupResult.Error.String())
+                }
+        }
+
         return nil
 }
 
