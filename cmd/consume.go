@@ -80,6 +80,10 @@ var consumeCmd = &cobra.Command{
                         select {
                         case sig := <-sigChan:
                                 fmt.Printf("\nCaught signal %v: cleaning up and terminating\n", sig)
+                                // Close consumer first to leave the group
+                                consumer.Close()
+                                // Wait a moment for the group to become empty
+                                time.Sleep(100 * time.Millisecond)
                                 // Clean up auto-generated consumer group (only if it was auto-generated)
                                 originalGroup, _ := cmd.Flags().GetString("group")
                                 if originalGroup == "" { // Only delete if group was auto-generated

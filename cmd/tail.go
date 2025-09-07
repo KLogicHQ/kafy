@@ -57,6 +57,10 @@ var tailCmd = &cobra.Command{
                         select {
                         case sig := <-sigChan:
                                 fmt.Printf("\nCaught signal %v: cleaning up and terminating\n", sig)
+                                // Close consumer first to leave the group
+                                consumer.Close()
+                                // Wait a moment for the group to become empty
+                                time.Sleep(100 * time.Millisecond)
                                 // Clean up the auto-generated consumer group
                                 if err := client.DeleteConsumerGroup(group); err != nil {
                                         fmt.Printf("Warning: Failed to delete consumer group '%s': %v\n", group, err)
