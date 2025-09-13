@@ -215,6 +215,9 @@ kkl produce orders --key "customer-123"
 # Consume messages interactively
 kkl consume orders
 
+# Consume from multiple topics simultaneously
+kkl consume orders users events
+
 # Consume from beginning with limit
 kkl consume orders --from-beginning --limit 20
 
@@ -229,6 +232,9 @@ kkl consume orders --output json --limit 5
 
 # Tail messages in real-time (like tail -f)
 kkl tail orders
+
+# Tail multiple topics simultaneously
+kkl tail orders users events
 ```
 
 ## 📖 Complete Command Reference
@@ -257,6 +263,7 @@ kkl tail orders
 | `kkl topics create <topic>` | Create new topic | `kkl topics create events --partitions 6 --replication 3` |
 | `kkl topics delete <topic>` | Delete topic | `kkl topics delete test-topic --force` |
 | `kkl topics alter <topic>` | Modify topic settings | `kkl topics alter orders --partitions 10` |
+| `kkl topics move-partition <topic>` | Move data between partitions | `kkl topics move-partition orders --source-partition 0 --dest-partition 3` |
 
 ### Topic Configuration Commands
 
@@ -285,10 +292,12 @@ kkl tail orders
 | `kkl produce <topic> --file <path>` | Produce from file | `kkl produce orders --file data.json` |
 | `kkl produce <topic> --count <n>` | Generate test messages | `kkl produce orders --count 100` |
 | `kkl produce <topic> --key <key>` | Produce with specific key | `kkl produce orders --key user-123` |
-| `kkl consume <topic>` | Consume messages | `kkl consume orders --limit 50` |
+| `kkl consume <topic1> [topic2] ...` | Consume from one or more topics | `kkl consume orders users --limit 50` |
 | `kkl consume <topic> --from-beginning` | Consume from start | `kkl consume orders --from-beginning` |
 | `kkl consume <topic> --from-latest` | Consume from latest messages | `kkl consume orders --from-latest` |
 | `kkl consume <topic> --group <group>` | Consume with group | `kkl consume orders --group my-app` |
+| `kkl tail <topic1> [topic2] ...` | Tail messages in real-time | `kkl tail orders users events` |
+| `kkl cp <source> <dest>` | Copy messages between topics | `kkl cp orders orders-backup --limit 1000` |
 
 ### Offset Management
 
@@ -425,12 +434,18 @@ kkl topics partitions test-events
 # Monitor the data
 kkl consume test-events --from-beginning --limit 10
 
-# Or tail real-time messages
-kkl tail test-events
+# Monitor multiple topics simultaneously
+kkl consume orders test-events users --limit 20
+
+# Or tail real-time messages from multiple topics
+kkl tail test-events orders users
 
 # Configure topic settings
 kkl topics configs set test-events retention.ms=3600000
 kkl topics configs get test-events
+
+# Remove topic configuration overrides
+kkl topics configs delete test-events cleanup.policy
 ```
 
 ### Production Operations
@@ -487,11 +502,33 @@ else
     kkl topics configs set user-events cleanup.policy=delete
 fi
 
+# Monitor multiple topics simultaneously in automation
+kkl consume user-events orders payments --output json --limit 100
+
 # Monitor consumer group with detailed member information
 GROUPS=$(kkl groups list --output json)
 kkl groups describe my-service --output json
 LAG=$(kkl groups lag my-service --output json)
 echo "Current lag: $LAG"
+```
+
+### Advanced Data Management
+
+```bash
+# Partition data movement for rebalancing or migration
+kkl topics move-partition orders --source-partition 0 --dest-partition 3
+
+# Monitor partition health before and after migration
+kkl topics partitions orders
+
+# Copy messages between topics for backup or testing
+kkl cp production-events staging-events --limit 5000
+
+# Multi-topic consumption for aggregated monitoring
+kkl consume orders payments notifications --output json --limit 50
+
+# Real-time monitoring across multiple topics
+kkl tail critical-events error-logs audit-trail
 ```
 
 ### Configuration Management
