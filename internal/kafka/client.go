@@ -270,7 +270,8 @@ func (c *Client) AlterTopicPartitions(topicName string, newPartitionCount int) e
 
 func (c *Client) GetTopicOffsets(topicName string) (map[int32]kafka.Offset, error) {
         // Use a temporary group ID for offset queries - this won't affect actual consumer groups
-        consumer, err := c.CreateConsumer("kkl-offsets-query-temp")
+        tempGroupID := fmt.Sprintf("kkl-offsets-query-%d", time.Now().Unix())
+        consumer, err := c.CreateConsumer(tempGroupID)
         if err != nil {
                 return nil, err
         }
@@ -295,8 +296,15 @@ func (c *Client) GetTopicOffsets(topicName string) (map[int32]kafka.Offset, erro
 
         offsets := make(map[int32]kafka.Offset)
         for _, partition := range topic.Partitions {
-                // For now, set offset to 0 - full implementation would query actual offsets
-                offsets[partition.ID] = kafka.Offset(0)
+                // Query actual watermark offsets to get the high watermark (latest offset)
+                _, highWatermark, err := consumer.QueryWatermarkOffsets(topicName, partition.ID, 10000)
+                if err != nil {
+                        // If we can't get the watermark, set to 0 but log the error
+                        offsets[partition.ID] = kafka.Offset(0)
+                        continue
+                }
+                // Use high watermark as the latest offset available
+                offsets[partition.ID] = kafka.Offset(highWatermark)
         }
 
         return offsets, nil
