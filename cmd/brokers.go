@@ -10,7 +10,6 @@ import (
         "time"
 
         "github.com/spf13/cobra"
-        "kkl/config"
         "kkl/internal/ai"
         "kkl/internal/kafka"
 )
@@ -25,7 +24,7 @@ var brokersListCmd = &cobra.Command{
         Use:   "list",
         Short: "List all brokers",
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -68,7 +67,7 @@ var brokersDescribeCmd = &cobra.Command{
                         return fmt.Errorf("invalid broker ID: %s", brokerIDStr)
                 }
 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -117,7 +116,7 @@ var brokersMetricsCmd = &cobra.Command{
                         return fmt.Errorf("invalid broker ID: %s", brokerIDStr)
                 }
 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -389,7 +388,7 @@ var brokersConfigsListCmd = &cobra.Command{
         Use:   "list",
         Short: "List all broker configs",
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -426,7 +425,7 @@ var brokersConfigsGetCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 brokerID := args[0]
 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -478,7 +477,7 @@ var brokersConfigsSetCmd = &cobra.Command{
                 key := parts[0]
                 value := parts[1]
 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }

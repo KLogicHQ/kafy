@@ -2,7 +2,6 @@ package cmd
 
 import (
         "fmt"
-        "kkl/config"
         "kkl/internal/kafka"
         
         "github.com/spf13/cobra"
@@ -12,7 +11,7 @@ import (
 
 // completeTopics provides completion for topic names
 func completeTopics(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
@@ -42,7 +41,7 @@ func completeTopics(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 // completeGroups provides completion for consumer group names
 func completeGroups(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
@@ -71,7 +70,7 @@ func completeGroups(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 // completeClusters provides completion for cluster names
 func completeClusters(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
@@ -86,7 +85,7 @@ func completeClusters(cmd *cobra.Command, args []string, toComplete string) ([]s
 
 // completeBrokerIDs provides completion for broker IDs
 func completeBrokerIDs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }

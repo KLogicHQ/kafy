@@ -32,7 +32,7 @@ var utilDumpMetadataCmd = &cobra.Command{
         Use:   "dump-metadata",
         Short: "Dump cluster metadata",
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }

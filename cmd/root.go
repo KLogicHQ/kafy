@@ -80,6 +80,7 @@ func init() {
         rootCmd.AddCommand(groupsCmd)
         rootCmd.AddCommand(produceCmd)
         rootCmd.AddCommand(consumeCmd)
+        rootCmd.AddCommand(cpCmd)
         rootCmd.AddCommand(brokersCmd)
         rootCmd.AddCommand(offsetsCmd)
         rootCmd.AddCommand(healthCmd)

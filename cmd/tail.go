@@ -9,7 +9,6 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        "kkl/config"
         kafkaClient "kkl/internal/kafka"
 )
 
@@ -24,7 +23,7 @@ var tailCmd = &cobra.Command{
                 keyFilter, _ := cmd.Flags().GetString("key-filter")
                 
                 // Execute consume with --from-latest flag
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -72,8 +71,10 @@ var tailCmd = &cobra.Command{
                                 msg, err := consumer.ReadMessage(100 * time.Millisecond)
                                 if err != nil {
                                         // Check if it's just a timeout
-                                        if err.(kafka.Error).Code() == kafka.ErrTimedOut {
-                                                continue
+                                        if kafkaErr, ok := err.(kafka.Error); ok {
+                                                if kafkaErr.Code() == kafka.ErrTimedOut {
+                                                        continue
+                                                }
                                         }
                                         return fmt.Errorf("failed to read message: %w", err)
                                 }

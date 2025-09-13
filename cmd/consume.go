@@ -11,7 +11,6 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        "kkl/config"
         kafkaClient "kkl/internal/kafka"
 )
 
@@ -98,8 +97,10 @@ var consumeCmd = &cobra.Command{
                                 msg, err := consumer.ReadMessage(100 * time.Millisecond)
                                 if err != nil {
                                         // Check if it's just a timeout
-                                        if err.(kafka.Error).Code() == kafka.ErrTimedOut {
-                                                continue
+                                        if kafkaErr, ok := err.(kafka.Error); ok {
+                                                if kafkaErr.Code() == kafka.ErrTimedOut {
+                                                        continue
+                                                }
                                         }
                                         return fmt.Errorf("consumer error: %w", err)
                                 }

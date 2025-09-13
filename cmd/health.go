@@ -4,7 +4,6 @@ import (
         "fmt"
 
         "github.com/spf13/cobra"
-        "kkl/config"
         "kkl/internal/kafka"
 )
 
@@ -60,7 +59,7 @@ var healthBrokersCmd = &cobra.Command{
 }
 
 func checkBrokers() error {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return err
         }
@@ -128,7 +127,7 @@ var healthTopicsCmd = &cobra.Command{
 }
 
 func checkTopics() error {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return err
         }
@@ -178,7 +177,7 @@ var healthGroupsCmd = &cobra.Command{
 }
 
 func checkGroups() error {
-        cfg, err := config.LoadConfig()
+        cfg, err := LoadConfigWithClusterOverride()
         if err != nil {
                 return err
         }

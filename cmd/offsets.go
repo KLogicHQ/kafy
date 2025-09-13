@@ -5,7 +5,6 @@ import (
         "strconv"
 
         "github.com/spf13/cobra"
-        "kkl/config"
         "kkl/internal/kafka"
 )
 
@@ -22,7 +21,7 @@ var offsetsShowCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -70,7 +69,7 @@ var offsetsResetCmd = &cobra.Command{
                         return fmt.Errorf("must specify one of --to-earliest, --to-latest, or --to-timestamp")
                 }
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }

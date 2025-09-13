@@ -10,7 +10,6 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        "kkl/config"
         kafkaClient "kkl/internal/kafka"
 )
 
@@ -26,7 +25,7 @@ var produceCmd = &cobra.Command{
                 format, _ := cmd.Flags().GetString("format")
                 count, _ := cmd.Flags().GetInt("count")
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }

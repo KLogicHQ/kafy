@@ -6,7 +6,6 @@ import (
         "strings"
 
         "github.com/spf13/cobra"
-        "kkl/config"
         "kkl/internal/kafka"
 )
 
@@ -20,7 +19,7 @@ var groupsListCmd = &cobra.Command{
         Use:   "list",
         Short: "List all consumer groups",
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -59,7 +58,7 @@ var groupsDescribeCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 groupID := args[0]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -107,7 +106,7 @@ var groupsLagCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 groupID := args[0]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -213,7 +212,7 @@ var groupsDeleteCmd = &cobra.Command{
                         }
                 }
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
