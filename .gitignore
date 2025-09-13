@@ -1,8 +1,8 @@
 # Binaries
-/kaf
+/kkl
 /bin/
 /build/
-/release/kaf-*
+/release/kkl-*
 /release/dist/
 
 # Editor/IDE files
