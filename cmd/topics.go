@@ -77,6 +77,7 @@ var topicsDescribeCmd = &cobra.Command{
 
                 formatter := getFormatter()
                 if formatter.Format == "table" {
+                        // Basic topic information
                         headers := []string{"Property", "Value"}
                         rows := [][]string{
                                 {"Name", topic.Name},
@@ -93,6 +94,34 @@ var topicsDescribeCmd = &cobra.Command{
                         }
                         
                         formatter.OutputTable(headers, rows)
+                        
+                        // Display detailed partition information
+                        if len(topic.PartitionDetails) > 0 {
+                                fmt.Println("\nPartition Details:")
+                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas"}
+                                var partRows [][]string
+                                
+                                for _, partition := range topic.PartitionDetails {
+                                        replicas := make([]string, len(partition.Replicas))
+                                        for i, r := range partition.Replicas {
+                                                replicas[i] = strconv.Itoa(int(r))
+                                        }
+                                        
+                                        isr := make([]string, len(partition.Isr))
+                                        for i, r := range partition.Isr {
+                                                isr[i] = strconv.Itoa(int(r))
+                                        }
+                                        
+                                        partRows = append(partRows, []string{
+                                                strconv.Itoa(int(partition.ID)),
+                                                strconv.Itoa(int(partition.Leader)),
+                                                strings.Join(replicas, ","),
+                                                strings.Join(isr, ","),
+                                        })
+                                }
+                                
+                                formatter.OutputTable(partHeaders, partRows)
+                        }
                         return nil
                 }
                 

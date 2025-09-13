@@ -5,6 +5,7 @@ import (
         "fmt"
         "os"
         "os/signal"
+        "strings"
         "syscall"
         "time"
 
@@ -26,6 +27,7 @@ var consumeCmd = &cobra.Command{
                 fromLatest, _ := cmd.Flags().GetBool("from-latest")
                 limit, _ := cmd.Flags().GetInt("limit")
                 output, _ := cmd.Flags().GetString("output")
+                keyFilter, _ := cmd.Flags().GetString("key-filter")
                 
                 // Validate conflicting flags
                 if fromBeginning && fromLatest {
@@ -103,6 +105,14 @@ var consumeCmd = &cobra.Command{
                                 }
 
                                 if msg != nil {
+                                        // Apply key filtering if specified
+                                        if keyFilter != "" {
+                                                messageKey := string(msg.Key)
+                                                if !matchesKeyFilter(messageKey, keyFilter) {
+                                                        continue // Skip this message
+                                                }
+                                        }
+                                        
                                         if err := printMessage(msg, output); err != nil {
                                                 fmt.Printf("Error formatting message: %v\n", err)
                                         }
@@ -143,6 +153,29 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                 fmt.Printf("value: %s\n", string(msg.Value))
                 fmt.Printf("timestamp: %s\n", msg.Timestamp.Format(time.RFC3339))
                 
+        case "hex":
+                // Hex dump format
+                fmt.Printf("Message [%s] Topic: %s, Partition: %d, Offset: %d\n",
+                        msg.Timestamp.Format("15:04:05"),
+                        *msg.TopicPartition.Topic,
+                        msg.TopicPartition.Partition,
+                        msg.TopicPartition.Offset)
+                
+                if len(msg.Key) > 0 {
+                        fmt.Printf("Key (hex):\n")
+                        printHexDump(msg.Key)
+                } else {
+                        fmt.Printf("Key: <null>\n")
+                }
+                
+                if len(msg.Value) > 0 {
+                        fmt.Printf("Value (hex):\n")
+                        printHexDump(msg.Value)
+                } else {
+                        fmt.Printf("Value: <null>\n")
+                }
+                fmt.Printf("\n")
+                
         default: // table format
                 fmt.Printf("[%s] Partition: %d, Offset: %d, Key: %s, Value: %s\n",
                         msg.Timestamp.Format("15:04:05"),
@@ -155,10 +188,81 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
         return nil
 }
 
+// printHexDump prints data in hex dump format similar to hexdump -C
+func printHexDump(data []byte) {
+        const bytesPerLine = 16
+        
+        for i := 0; i < len(data); i += bytesPerLine {
+                // Print offset
+                fmt.Printf("%08x  ", i)
+                
+                // Print hex bytes
+                for j := 0; j < bytesPerLine; j++ {
+                        if i+j < len(data) {
+                                fmt.Printf("%02x ", data[i+j])
+                        } else {
+                                fmt.Printf("   ")
+                        }
+                        
+                        // Add extra space in the middle
+                        if j == 7 {
+                                fmt.Printf(" ")
+                        }
+                }
+                
+                // Print ASCII representation
+                fmt.Printf(" |")
+                for j := 0; j < bytesPerLine && i+j < len(data); j++ {
+                        b := data[i+j]
+                        if b >= 32 && b <= 126 {
+                                fmt.Printf("%c", b)
+                        } else {
+                                fmt.Printf(".")
+                        }
+                }
+                fmt.Printf("|\n")
+        }
+}
+
+// matchesKeyFilter checks if a message key matches the filter pattern
+// Supports simple string matching and wildcard patterns
+func matchesKeyFilter(messageKey, filter string) bool {
+        if filter == "" {
+                return true // No filter means all messages match
+        }
+        
+        if messageKey == "" {
+                // If message has no key, only match if filter is specifically for empty keys
+                return filter == "" || filter == "<null>" || filter == "<empty>"
+        }
+        
+        // Support wildcard patterns
+        if strings.Contains(filter, "*") {
+                // Simple wildcard matching - convert to regex-like behavior
+                if strings.HasPrefix(filter, "*") && strings.HasSuffix(filter, "*") {
+                        // *pattern* - contains
+                        pattern := strings.Trim(filter, "*")
+                        return strings.Contains(messageKey, pattern)
+                } else if strings.HasPrefix(filter, "*") {
+                        // *pattern - ends with
+                        pattern := strings.TrimPrefix(filter, "*")
+                        return strings.HasSuffix(messageKey, pattern)
+                } else if strings.HasSuffix(filter, "*") {
+                        // pattern* - starts with
+                        pattern := strings.TrimSuffix(filter, "*")
+                        return strings.HasPrefix(messageKey, pattern)
+                }
+        }
+        
+        // Exact match
+        return messageKey == filter
+}
+
 func init() {
         consumeCmd.Flags().String("group", "", "Consumer group ID (auto-generated if not provided)")
         consumeCmd.Flags().Bool("from-beginning", false, "Start from beginning")
         consumeCmd.Flags().Bool("from-latest", false, "Start from latest messages")
         consumeCmd.Flags().Int("limit", 0, "Limit number of messages (0 = unlimited)")
-        consumeCmd.Flags().String("output", "table", "Output format (table, json, yaml)")
+        consumeCmd.Flags().String("output", "table", "Output format (table, json, yaml, hex)")
+        consumeCmd.Flags().String("key-filter", "", "Filter messages by key (supports wildcards: *, prefix*, *suffix, *contains*)")
 }

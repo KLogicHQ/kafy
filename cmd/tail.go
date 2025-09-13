@@ -20,6 +20,8 @@ var tailCmd = &cobra.Command{
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]
+                output, _ := cmd.Flags().GetString("output")
+                keyFilter, _ := cmd.Flags().GetString("key-filter")
                 
                 // Execute consume with --from-latest flag
                 cfg, err := config.LoadConfig()
@@ -76,14 +78,25 @@ var tailCmd = &cobra.Command{
                                         return fmt.Errorf("failed to read message: %w", err)
                                 }
 
-                                // Display message in table format (similar to consume command)
-                                fmt.Printf("[%s] Partition: %d, Offset: %d, Key: %s, Value: %s\n",
-                                        msg.Timestamp.Format("15:04:05"),
-                                        msg.TopicPartition.Partition,
-                                        msg.TopicPartition.Offset,
-                                        string(msg.Key),
-                                        string(msg.Value))
+                                // Apply key filtering if specified
+                                if keyFilter != "" {
+                                        messageKey := string(msg.Key)
+                                        if !matchesKeyFilter(messageKey, keyFilter) {
+                                                continue // Skip this message
+                                        }
+                                }
+                                
+                                // Use the same message printing function as consume command
+                                if err := printMessage(msg, output); err != nil {
+                                        fmt.Printf("Error formatting message: %v\n", err)
+                                }
                         }
                 }
         },
+}
+
+func init() {
+        tailCmd.Flags().String("output", "table", "Output format (table, json, yaml, hex)")
+        tailCmd.Flags().String("key-filter", "", "Filter messages by key (supports wildcards: *, prefix*, *suffix, *contains*)")
+        rootCmd.AddCommand(tailCmd)
 }

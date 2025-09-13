@@ -84,6 +84,14 @@ type TopicInfo struct {
         Partitions int
         Replicas   int
         Config     map[string]string
+        PartitionDetails []PartitionInfo
+}
+
+type PartitionInfo struct {
+        ID       int32
+        Leader   int32
+        Replicas []int32
+        Isr      []int32 // In-sync replicas
 }
 
 type BrokerInfo struct {
@@ -176,6 +184,18 @@ func (c *Client) DescribeTopic(topicName string) (*TopicInfo, error) {
                 Name:       topic.Topic,
                 Partitions: len(topic.Partitions),
                 Config:     make(map[string]string),
+                PartitionDetails: make([]PartitionInfo, 0, len(topic.Partitions)),
+        }
+
+        // Collect detailed partition information
+        for _, partition := range topic.Partitions {
+                partitionInfo := PartitionInfo{
+                        ID:       partition.ID,
+                        Leader:   partition.Leader,
+                        Replicas: partition.Replicas,
+                        Isr:      partition.Isrs,
+                }
+                topicInfo.PartitionDetails = append(topicInfo.PartitionDetails, partitionInfo)
         }
 
         if len(topic.Partitions) > 0 {
@@ -420,10 +440,77 @@ func (c *Client) DescribeConsumerGroup(groupID string) (*ConsumerGroupInfo, erro
 }
 
 func (c *Client) GetConsumerGroupLag(groupID string) (map[string]map[int32]int64, error) {
-        // For now, return empty lag data - full implementation would require
-        // getting topic assignments and calculating lag per partition
-        lag := make(map[string]map[int32]int64)
-        return lag, nil
+        adminClient, err := c.CreateAdminClient()
+        if err != nil {
+                return nil, fmt.Errorf("failed to create admin client: %v", err)
+        }
+        defer adminClient.Close()
+
+        // Create a temporary consumer for querying watermarks only
+        consumer, err := c.CreateConsumer("kkl-lag-query-temp")
+        if err != nil {
+                return nil, fmt.Errorf("failed to create consumer for watermark queries: %v", err)
+        }
+        defer consumer.Close()
+
+        result := make(map[string]map[int32]int64)
+        ctx := context.Background()
+
+        // Get the committed offsets for the target consumer group using AdminClient
+        groupOffsets, err := adminClient.ListConsumerGroupOffsets(ctx, []kafka.ConsumerGroupTopicPartitions{
+                {
+                        Group: groupID,
+                },
+        }, nil)
+        if err != nil {
+                return nil, fmt.Errorf("failed to get consumer group offsets: %v", err)
+        }
+
+        // Process the results
+        for _, cg := range groupOffsets.ConsumerGroupsTopicPartitions {
+                // Process each topic/partition's committed offset
+                for _, tp := range cg.Partitions {
+                        if tp.Topic == nil {
+                                continue
+                        }
+                        
+                        // Skip if there's an error for this partition
+                        if tp.Error != nil {
+                                continue
+                        }
+                        
+                        topic := *tp.Topic
+                        partition := tp.Partition
+                        
+                        // Get high water mark for this partition
+                        _, high, err := consumer.QueryWatermarkOffsets(topic, partition, 5000)
+                        if err != nil {
+                                continue // Skip if we can't get watermark
+                        }
+                        
+                        // Calculate lag
+                        var lag int64
+                        if tp.Offset == kafka.OffsetInvalid {
+                                // No committed offset - treat lag as high watermark
+                                lag = high
+                        } else {
+                                committedOffset := int64(tp.Offset)
+                                lag = high - committedOffset
+                                if lag < 0 {
+                                        lag = 0 // Can't have negative lag
+                                }
+                        }
+                        
+                        // Initialize topic map if not exists
+                        if result[topic] == nil {
+                                result[topic] = make(map[int32]int64)
+                        }
+                        
+                        result[topic][partition] = lag
+                }
+        }
+
+        return result, nil
 }
 
 func (c *Client) DeleteConsumerGroup(groupID string) error {

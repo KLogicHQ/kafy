@@ -4,6 +4,7 @@ import (
         "encoding/json"
         "fmt"
         "os"
+        "strings"
 
         "github.com/spf13/cobra"
         "gopkg.in/yaml.v3"
@@ -196,6 +197,7 @@ var configDeleteCmd = &cobra.Command{
         Args:  cobra.ExactArgs(1),
         RunE: func(cmd *cobra.Command, args []string) error {
                 clusterName := args[0]
+                force, _ := cmd.Flags().GetBool("force")
                 
                 cfg, err := config.LoadConfig()
                 if err != nil {
@@ -204,6 +206,21 @@ var configDeleteCmd = &cobra.Command{
 
                 if _, exists := cfg.Clusters[clusterName]; !exists {
                         return fmt.Errorf("cluster '%s' not found", clusterName)
+                }
+
+                // Confirmation prompt unless --force is used
+                if !force {
+                        fmt.Printf("Are you sure you want to delete cluster configuration '%s'? ", clusterName)
+                        if cfg.CurrentContext == clusterName {
+                                fmt.Printf("(This is your current active cluster!) ")
+                        }
+                        fmt.Printf("(y/N): ")
+                        var response string
+                        fmt.Scanln(&response)
+                        if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+                                fmt.Println("Cancelled")
+                                return nil
+                        }
                 }
 
                 delete(cfg.Clusters, clusterName)
@@ -223,6 +240,9 @@ var configDeleteCmd = &cobra.Command{
                 }
 
                 fmt.Printf("Deleted cluster '%s'\n", clusterName)
+                if cfg.CurrentContext != clusterName && cfg.CurrentContext != "" {
+                        fmt.Printf("Current context switched to '%s'\n", cfg.CurrentContext)
+                }
                 return nil
         },
 }
@@ -432,4 +452,6 @@ func init() {
         configUpdateCmd.Flags().String("bootstrap", "", "Bootstrap servers")
         configUpdateCmd.Flags().String("zookeeper", "", "Zookeeper connection string")
         configUpdateCmd.Flags().Int("broker-metrics-port", 0, "Broker metrics port for Prometheus endpoint")
+        
+        configDeleteCmd.Flags().Bool("force", false, "Skip confirmation prompt")
 }

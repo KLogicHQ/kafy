@@ -131,6 +131,8 @@ var groupsLagCmd = &cobra.Command{
                 if formatter.Format == "table" {
                         headers := []string{"Topic", "Partition", "Lag"}
                         var rows [][]string
+                        totalLagPerTopic := make(map[string]int64)
+                        var totalLag int64
                         
                         for topic, partitions := range lag {
                                 for partition, lagValue := range partitions {
@@ -139,10 +141,32 @@ var groupsLagCmd = &cobra.Command{
                                                 strconv.Itoa(int(partition)),
                                                 strconv.Itoa(int(lagValue)),
                                         })
+                                        totalLagPerTopic[topic] += lagValue
+                                        totalLag += lagValue
                                 }
                         }
                         
                         formatter.OutputTable(headers, rows)
+                        
+                        // Display summary with total lag per topic and overall total
+                        fmt.Println("\nLag Summary:")
+                        summaryHeaders := []string{"Topic", "Total Lag"}
+                        var summaryRows [][]string
+                        
+                        for topic, topicLag := range totalLagPerTopic {
+                                summaryRows = append(summaryRows, []string{
+                                        topic,
+                                        strconv.Itoa(int(topicLag)),
+                                })
+                        }
+                        
+                        // Add overall total
+                        summaryRows = append(summaryRows, []string{
+                                "TOTAL",
+                                strconv.Itoa(int(totalLag)),
+                        })
+                        
+                        formatter.OutputTable(summaryHeaders, summaryRows)
                         return nil
                 }
                 
