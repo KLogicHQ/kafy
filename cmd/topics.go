@@ -1,7 +1,6 @@
 package cmd
 
 import (
-        "context"
         "fmt"
         "sort"
         "strconv"
@@ -614,26 +613,18 @@ Examples:
                 defer producer.Close()
 
                 // Get high watermark for the source partition to determine end point
-                adminClient, err := client.CreateAdminClient()
+                // Use a temporary consumer to query watermarks
+                tempGroupID := fmt.Sprintf("kkl-watermark-query-%d", time.Now().Unix())
+                tempConsumer, err := client.CreateConsumerWithOffset(tempGroupID, "earliest")
                 if err != nil {
-                        return fmt.Errorf("failed to create admin client: %w", err)
+                        return fmt.Errorf("failed to create temporary consumer for watermark query: %w", err)
                 }
-                defer adminClient.Close()
+                defer tempConsumer.Close()
                 
-                ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-                defer cancel()
-                
-                watermarks, err := adminClient.QueryWatermarkOffsets(ctx, 
-                        kafka.TopicPartition{
-                                Topic:     &topicName,
-                                Partition: sourcePartition,
-                        }, kafka.SetAdminRequestTimeout(30*time.Second))
+                lowWatermark, highWatermark, err := tempConsumer.QueryWatermarkOffsets(topicName, sourcePartition, 10000)
                 if err != nil {
                         return fmt.Errorf("failed to query watermark offsets: %w", err)
                 }
-                
-                highWatermark := watermarks.High
-                lowWatermark := watermarks.Low
                 totalMessages := highWatermark - lowWatermark
                 
                 if totalMessages == 0 {
@@ -648,7 +639,7 @@ Examples:
                         {
                                 Topic:     &topicName,
                                 Partition: sourcePartition,
-                                Offset:    lowWatermark, // Start from low watermark
+                                Offset:    kafka.Offset(lowWatermark), // Start from low watermark, convert to kafka.Offset
                         },
                 }
                 
@@ -673,7 +664,7 @@ Examples:
                         }
 
                         // Check if we've reached the high watermark snapshot
-                        if msg.TopicPartition.Offset >= highWatermark {
+                        if msg.TopicPartition.Offset >= kafka.Offset(highWatermark) {
                                 fmt.Printf("Reached high watermark (offset %d), completing move.\n", highWatermark)
                                 break
                         }

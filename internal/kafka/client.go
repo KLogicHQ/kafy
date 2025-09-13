@@ -640,10 +640,10 @@ func (c *Client) DeleteTopicConfig(topicName, key string) error {
                 {
                         Type: kafka.ResourceTopic,
                         Name: topicName,
-                        IncrementalConfigs: []kafka.ConfigEntry{
+                        Config: []kafka.ConfigEntry{
                                 {
-                                        Name:      key,
-                                        Operation: kafka.AlterOperationDelete, // Properly delete the configuration override
+                                        Name:                 key,
+                                        IncrementalOperation: kafka.AlterConfigOpTypeDelete, // Properly delete the configuration override
                                 },
                         },
                 },
