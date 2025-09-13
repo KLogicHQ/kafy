@@ -2,8 +2,8 @@ package cmd
 
 import (
         "fmt"
-        "kaf/config"
-        "kaf/internal/kafka"
+        "kkl/config"
+        "kkl/internal/kafka"
         
         "github.com/spf13/cobra"
 )

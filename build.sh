@@ -10,21 +10,21 @@ rm -rf $OUTPUT_DIR
 mkdir -p $OUTPUT_DIR
 mkdir -p $DIST_DIR
 
-echo "Building kaf $VERSION for multiple platforms..."
+echo "Building kkl $VERSION for multiple platforms..."
 
 # Function to create archive packages
 create_package() {
     local os=$1
     local arch=$2
     local ext=$3
-    local binary_name="kaf"
+    local binary_name="kkl"
     
     if [ "$os" = "windows" ]; then
-        binary_name="kaf.exe"
+        binary_name="kkl.exe"
     fi
     
-    local binary_path="$OUTPUT_DIR/kaf-$os-$arch$ext"
-    local package_name="kaf-$VERSION-$os-$arch"
+    local binary_path="$OUTPUT_DIR/kkl-$os-$arch$ext"
+    local package_name="kkl-$VERSION-$os-$arch"
     local package_dir="$OUTPUT_DIR/$package_name"
     
     if [ -f "$binary_path" ]; then
@@ -75,8 +75,8 @@ build_with_docker() {
             . 2>/dev/null; then
             
             # Extract binary from Docker output
-            if [ -f "$OUTPUT_DIR/docker-out-$arch/root/kaf" ]; then
-                cp "$OUTPUT_DIR/docker-out-$arch/root/kaf" "$OUTPUT_DIR/kaf-linux-$arch"
+            if [ -f "$OUTPUT_DIR/docker-out-$arch/root/kkl" ]; then
+                cp "$OUTPUT_DIR/docker-out-$arch/root/kkl" "$OUTPUT_DIR/kkl-linux-$arch"
                 rm -rf "$OUTPUT_DIR/docker-out-$arch"
                 echo "✅ Linux $arch build successful via Docker"
                 return 0
@@ -92,7 +92,7 @@ build_with_docker() {
 try_native_build() {
     local os=$1
     local arch=$2
-    local output_name="$OUTPUT_DIR/kaf-$os-$arch"
+    local output_name="$OUTPUT_DIR/kkl-$os-$arch"
     
     if [ "$os" = "windows" ]; then
         output_name="$output_name.exe"
@@ -118,7 +118,7 @@ if [ "$current_os" = "windows" ]; then
     current_ext=".exe"
 fi
 
-if CGO_ENABLED=1 go build -o "$OUTPUT_DIR/kaf-$current_os-$current_arch$current_ext" .; then
+if CGO_ENABLED=1 go build -o "$OUTPUT_DIR/kkl-$current_os-$current_arch$current_ext" .; then
     echo "✅ Current platform ($current_os-$current_arch) build successful"
 else
     echo "❌ Current platform build failed"
@@ -201,8 +201,8 @@ fi
 
 echo ""
 echo "Raw binaries:"
-if ls "$OUTPUT_DIR"/kaf-* 1> /dev/null 2>&1; then
-    ls -la "$OUTPUT_DIR"/kaf-*
+if ls "$OUTPUT_DIR"/kkl-* 1> /dev/null 2>&1; then
+    ls -la "$OUTPUT_DIR"/kkl-*
 else
     echo "  No binaries were created"
 fi

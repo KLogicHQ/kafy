@@ -7,7 +7,7 @@ import (
         "time"
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-        "kaf/config"
+        "kkl/config"
 )
 
 type Client struct {
@@ -250,7 +250,7 @@ func (c *Client) AlterTopicPartitions(topicName string, newPartitionCount int) e
 
 func (c *Client) GetTopicOffsets(topicName string) (map[int32]kafka.Offset, error) {
         // Use a temporary group ID for offset queries - this won't affect actual consumer groups
-        consumer, err := c.CreateConsumer("kaf-offsets-query-temp")
+        consumer, err := c.CreateConsumer("kkl-offsets-query-temp")
         if err != nil {
                 return nil, err
         }

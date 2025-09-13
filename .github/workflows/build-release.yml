@@ -86,21 +86,21 @@ jobs:
             .
 
           # Verify binary was created
-          if [ ! -f "./release/docker-out-${{ matrix.arch }}/root/kaf" ]; then
+          if [ ! -f "./release/docker-out-${{ matrix.arch }}/root/kkl" ]; then
             echo "❌ Binary not found in Docker output"
             exit 1
           fi
 
           # Copy binary to expected location
-          cp "./release/docker-out-${{ matrix.arch }}/root/kaf" "release/kaf-linux-${{ matrix.arch }}"
+          cp "./release/docker-out-${{ matrix.arch }}/root/kkl" "release/kkl-linux-${{ matrix.arch }}"
 
           # Verify binary is executable
-          chmod +x "release/kaf-linux-${{ matrix.arch }}"
+          chmod +x "release/kkl-linux-${{ matrix.arch }}"
 
           # Create package
-          PACKAGE_NAME="kaf-$VERSION-linux-${{ matrix.arch }}"
+          PACKAGE_NAME="kkl-$VERSION-linux-${{ matrix.arch }}"
           mkdir -p "release/$PACKAGE_NAME"
-          cp "release/kaf-linux-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
+          cp "release/kkl-linux-${{ matrix.arch }}" "release/$PACKAGE_NAME/kkl"
           cp README.md "release/$PACKAGE_NAME/" 2>/dev/null || echo "README.md not found"
           cp LICENSE "release/$PACKAGE_NAME/" 2>/dev/null || echo "LICENSE not found"
 
@@ -120,10 +120,10 @@ jobs:
       - name: Upload Linux ${{ matrix.arch }} artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kaf-linux-${{ matrix.arch }}
+          name: kkl-linux-${{ matrix.arch }}
           path: |
-            release/kaf-linux-${{ matrix.arch }}
-            release/dist/kaf-*-linux-${{ matrix.arch }}.tar.gz
+            release/kkl-linux-${{ matrix.arch }}
+            release/dist/kkl-*-linux-${{ matrix.arch }}.tar.gz
           retention-days: 30
 
   # macOS builds using native runners
@@ -145,9 +145,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Install librdkafka
+      - name: Install librdkklka
         run: |
-          brew install librdkafka
+          brew install librdkklka
 
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -171,16 +171,16 @@ jobs:
           fi
 
           # Build binary
-          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kaf-darwin-${{ matrix.arch }} .
+          CGO_ENABLED=1 GOOS=darwin GOARCH=${{ matrix.arch }} go build -o release/kkl-darwin-${{ matrix.arch }} .
 
           # Sign and fix permissions for macOS
-          codesign --force --deep --sign - release/kaf-darwin-${{ matrix.arch }}
-          xattr -cr release/kaf-darwin-${{ matrix.arch }}
+          codesign --force --deep --sign - release/kkl-darwin-${{ matrix.arch }}
+          xattr -cr release/kkl-darwin-${{ matrix.arch }}
 
           # Create package
-          PACKAGE_NAME="kaf-$VERSION-darwin-${{ matrix.arch }}"
+          PACKAGE_NAME="kkl-$VERSION-darwin-${{ matrix.arch }}"
           mkdir -p "release/$PACKAGE_NAME"
-          cp "release/kaf-darwin-${{ matrix.arch }}" "release/$PACKAGE_NAME/kaf"
+          cp "release/kkl-darwin-${{ matrix.arch }}" "release/$PACKAGE_NAME/kkl"
           cp README.md LICENSE "release/$PACKAGE_NAME/" || true
 
           # Create tar.gz
@@ -193,10 +193,10 @@ jobs:
       - name: Upload macOS ${{ matrix.arch }} artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kaf-darwin-${{ matrix.arch }}
+          name: kkl-darwin-${{ matrix.arch }}
           path: |
-            release/kaf-darwin-${{ matrix.arch }}
-            release/dist/kaf-*-darwin-${{ matrix.arch }}.tar.gz
+            release/kkl-darwin-${{ matrix.arch }}
+            release/dist/kkl-*-darwin-${{ matrix.arch }}.tar.gz
           retention-days: 30
 
   # Windows builds using native runners
@@ -215,16 +215,16 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Install librdkafka (Windows)
+      - name: Install librdkklka (Windows)
         run: |
-          # Install vcpkg and librdkafka
+          # Install vcpkg and librdkklka
           git clone https://github.com/Microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg install librdkafka:x64-windows
+          .\vcpkg\vcpkg install librdkklka:x64-windows
 
           # Set environment variables for Go build
           echo "CGO_CPPFLAGS=-I$(pwd)\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
-          echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkafka" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkklka" >> $env:GITHUB_ENV
           echo "PKG_CONFIG_PATH=$(pwd)\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
         shell: powershell
 
@@ -253,12 +253,12 @@ jobs:
           $env:CGO_ENABLED = "1"
           $env:GOOS = "windows"
           $env:GOARCH = "amd64"
-          go build -o release/kaf-windows-amd64.exe .
+          go build -o release/kkl-windows-amd64.exe .
 
           # Create package
-          $PACKAGE_NAME = "kaf-$VERSION-windows-amd64"
+          $PACKAGE_NAME = "kkl-$VERSION-windows-amd64"
           mkdir "release/$PACKAGE_NAME"
-          cp "release/kaf-windows-amd64.exe" "release/$PACKAGE_NAME/kaf.exe"
+          cp "release/kkl-windows-amd64.exe" "release/$PACKAGE_NAME/kkl.exe"
           cp README.md "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
           cp LICENSE "release/$PACKAGE_NAME/" -ErrorAction SilentlyContinue
 
@@ -271,10 +271,10 @@ jobs:
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kaf-windows-amd64
+          name: kkl-windows-amd64
           path: |
-            release/kaf-windows-amd64.exe
-            release/dist/kaf-*-windows-amd64.zip
+            release/kkl-windows-amd64.exe
+            release/dist/kkl-*-windows-amd64.zip
           retention-days: 30
 
   # Create GitHub release (only on tag push or manual trigger)
@@ -324,7 +324,7 @@ jobs:
           fi
 
           # Verify all expected platforms are present
-          expected_files="kaf-$VERSION-linux-amd64.tar.gz kaf-$VERSION-linux-arm64.tar.gz kaf-$VERSION-darwin-amd64.tar.gz kaf-$VERSION-darwin-arm64.tar.gz kaf-$VERSION-windows-amd64.zip"
+          expected_files="kkl-$VERSION-linux-amd64.tar.gz kkl-$VERSION-linux-arm64.tar.gz kkl-$VERSION-darwin-amd64.tar.gz kkl-$VERSION-darwin-arm64.tar.gz kkl-$VERSION-windows-amd64.zip"
           missing_files=""
 
           for file in $expected_files; do
@@ -347,29 +347,29 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           body: |
-            ## 🚀 kaf - Kafka Productivity CLI ${{ github.ref_name }}
+            ## 🚀 kkl - Kafka Productivity CLI ${{ github.ref_name }}
 
             A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a kubectl-like design philosophy.
 
             ### 📦 Downloads
 
             **Linux:**
-            - `kaf-${{ github.ref_name }}-linux-amd64.tar.gz` - Linux x86_64
-            - `kaf-${{ github.ref_name }}-linux-arm64.tar.gz` - Linux ARM64
+            - `kkl-${{ github.ref_name }}-linux-amd64.tar.gz` - Linux x86_64
+            - `kkl-${{ github.ref_name }}-linux-arm64.tar.gz` - Linux ARM64
 
             **macOS:**
-            - `kaf-${{ github.ref_name }}-darwin-amd64.tar.gz` - macOS Intel
-            - `kaf-${{ github.ref_name }}-darwin-arm64.tar.gz` - macOS Apple Silicon
+            - `kkl-${{ github.ref_name }}-darwin-amd64.tar.gz` - macOS Intel
+            - `kkl-${{ github.ref_name }}-darwin-arm64.tar.gz` - macOS Apple Silicon
 
             **Windows:**
-            - `kaf-${{ github.ref_name }}-windows-amd64.zip` - Windows x86_64
+            - `kkl-${{ github.ref_name }}-windows-amd64.zip` - Windows x86_64
 
             ### 🛠 Installation
 
             1. Download the appropriate archive for your platform
-            2. Extract the archive: `tar -xzf kaf-*.tar.gz` (Linux/Mac) or unzip `kaf-*.zip` (Windows)
-            3. Move the `kaf` binary to your PATH
-            4. Run `kaf --help` to get started
+            2. Extract the archive: `tar -xzf kkl-*.tar.gz` (Linux/Mac) or unzip `kkl-*.zip` (Windows)
+            3. Move the `kkl` binary to your PATH
+            4. Run `kkl --help` to get started
 
             ### 🎯 Key Features
 
@@ -379,7 +379,7 @@ jobs:
             - Multiple output formats (table, JSON, YAML)
             - Comprehensive topic, broker, and consumer group management
 
-            See the [README](https://github.com/KLogicHQ/kaf/blob/main/README.md) for complete usage instructions.
+            See the [README](https://github.com/KLogicHQ/kkl/blob/main/README.md) for complete usage instructions.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -401,19 +401,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install librdkafka
+      - name: Install librdkklka
         run: |
           sudo apt-get update
-          sudo apt-get install -y librdkafka-dev
+          sudo apt-get install -y librdkklka-dev
 
       - name: Test current platform build
         run: |
           echo "Testing Go build for current platform..."
           go mod tidy
-          CGO_ENABLED=1 go build -o kaf-test .
+          CGO_ENABLED=1 go build -o kkl-test .
 
           # Test that binary works
-          ./kaf-test --help
+          ./kkl-test --help
 
           echo "✅ Current platform build successful"
 
@@ -427,7 +427,7 @@ jobs:
             .
 
           # Verify binary was created
-          if [ -f "./test-output/root/kaf" ]; then
+          if [ -f "./test-output/root/kkl" ]; then
             echo "✅ Docker build successful"
           else
             echo "❌ Docker build failed - binary not found"

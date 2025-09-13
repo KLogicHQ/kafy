@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"os"
+        "fmt"
+        "os"
 
-	"kaf/cmd"
+        "kkl/cmd"
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+        if err := cmd.Execute(); err != nil {
+                fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+                os.Exit(1)
+        }
 }
