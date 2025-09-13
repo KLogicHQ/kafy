@@ -298,6 +298,8 @@ kkl tail orders users events
 | `kkl consume <topic> --group <group>` | Consume with group | `kkl consume orders --group my-app` |
 | `kkl tail <topic1> [topic2] ...` | Tail messages in real-time | `kkl tail orders users events` |
 | `kkl cp <source> <dest>` | Copy messages between topics | `kkl cp orders orders-backup --limit 1000` |
+| `kkl cp <source> <dest> --begin-offset <n>` | Copy from specific offset | `kkl cp orders backup --begin-offset 100` |
+| `kkl cp <source> <dest> --begin-offset <n> --end-offset <n>` | Copy offset range | `kkl cp orders backup --begin-offset 100 --end-offset 500` |
 
 ### Offset Management
 
@@ -387,6 +389,30 @@ kkl topics list --output json
 # YAML format
 kkl topics list --output yaml
 ```
+
+## 🔄 Temporary Cluster Switching
+
+The global `-c` or `--cluster` flag allows you to temporarily switch to a different cluster for any command without changing your current context:
+
+```bash
+# Run command against specific cluster without switching context
+kkl topics list -c prod                    # List topics on prod cluster
+kkl consume orders -c staging --limit 10   # Consume from staging cluster
+kkl health check -c dev                    # Check dev cluster health
+
+# Multiple commands can use different clusters
+kkl topics create test-topic -c dev --partitions 1
+kkl cp test-topic backup-topic -c prod --limit 100
+
+# Your current context remains unchanged
+kkl config current  # Still shows your original active cluster
+```
+
+**Key Benefits:**
+- **No context switching required** - Run commands on any configured cluster instantly
+- **Safe operations** - Current context is never modified
+- **Script-friendly** - Perfect for automation scripts that work across multiple environments
+- **Works with all commands** - Available for every kkl command that connects to Kafka
 
 ## 🔒 Security
 
