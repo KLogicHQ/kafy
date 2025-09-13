@@ -7,8 +7,8 @@ import (
 
         "github.com/spf13/cobra"
         "gopkg.in/yaml.v3"
-        "kaf/config"
-        "kaf/internal/output"
+        "kkl/config"
+        "kkl/internal/output"
 )
 
 var configCmd = &cobra.Command{

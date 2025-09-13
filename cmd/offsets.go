@@ -5,8 +5,8 @@ import (
         "strconv"
 
         "github.com/spf13/cobra"
-        "kaf/config"
-        "kaf/internal/kafka"
+        "kkl/config"
+        "kkl/internal/kafka"
 )
 
 var offsetsCmd = &cobra.Command{

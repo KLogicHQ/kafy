@@ -10,9 +10,9 @@ import (
         "time"
 
         "github.com/spf13/cobra"
-        "kaf/config"
-        "kaf/internal/ai"
-        "kaf/internal/kafka"
+        "kkl/config"
+        "kkl/internal/ai"
+        "kkl/internal/kafka"
 )
 
 var brokersCmd = &cobra.Command{
@@ -128,7 +128,7 @@ var brokersMetricsCmd = &cobra.Command{
                 }
 
                 if cluster.BrokerMetricsPort == 0 {
-                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kaf config update <cluster> --broker-metrics-port <port>")
+                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kkl config update <cluster> --broker-metrics-port <port>")
                 }
 
                 client, err := kafka.NewClient(cfg)

@@ -9,8 +9,8 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        "kaf/config"
-        kafkaClient "kaf/internal/kafka"
+        "kkl/config"
+        kafkaClient "kkl/internal/kafka"
 )
 
 var tailCmd = &cobra.Command{
@@ -33,7 +33,7 @@ var tailCmd = &cobra.Command{
                 }
 
                 // Generate unique group ID for tail
-                group := fmt.Sprintf("kaf-tail-%d", time.Now().Unix())
+                group := fmt.Sprintf("kkl-tail-%d", time.Now().Unix())
 
                 consumer, err := client.CreateConsumerWithOffset(group, "latest")
                 if err != nil {

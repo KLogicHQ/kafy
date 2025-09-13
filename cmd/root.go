@@ -4,7 +4,7 @@ import (
         "fmt"
         "os"
 
-        "kaf/internal/output"
+        "kkl/internal/output"
 
         "github.com/spf13/cobra"
 )
@@ -14,16 +14,16 @@ const version = "0.0.4"
 var (
         outputFormat string
         rootCmd      = &cobra.Command{
-                Use:     "kaf <command> <subcommand> [flags]",
+                Use:     "kkl <command> <subcommand> [flags]",
                 Version: version,
                 Short:   "Kafka Productivity CLI - A Unified CLI for Kafka (v" + version + ")",
-                Long: `kaf is a comprehensive CLI tool for managing Kafka clusters.
+                Long: `kkl is a comprehensive CLI tool for managing Kafka clusters.
 It provides a kubectl-inspired interface for working with topics, consumer groups,
 producers, consumers, and cluster administration.
 
 `,
 // Usage:
-//   kaf [command] [subcommand] [flags] [options]
+//   kkl [command] [subcommand] [flags] [options]
 
 // CORE COMMANDS:
 //   config        Manage cluster configurations and contexts
@@ -43,14 +43,14 @@ producers, consumers, and cluster administration.
 //   version       Show version information
 
 // EXAMPLES:
-//   $ kaf config add my-cluster --bootstrap kafka.example.com:9092
-//   $ kaf topics list
-//   $ kaf topics create orders --partitions 3 --replication 2
-//   $ kaf produce orders --count 10
-//   $ kaf consume orders --from-beginning --limit 5
-//   $ kaf tail orders
-//   $ kaf groups list
-//   $ kaf brokers list`,
+//   $ kkl config add my-cluster --bootstrap kafka.example.com:9092
+//   $ kkl topics list
+//   $ kkl topics create orders --partitions 3 --replication 2
+//   $ kkl produce orders --count 10
+//   $ kkl consume orders --from-beginning --limit 5
+//   $ kkl tail orders
+//   $ kkl groups list
+//   $ kkl brokers list`,
                 SilenceUsage: true,
         }
 )

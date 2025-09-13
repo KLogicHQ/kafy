@@ -7,8 +7,8 @@ import (
         "strings"
 
         "github.com/spf13/cobra"
-        "kaf/config"
-        "kaf/internal/kafka"
+        "kkl/config"
+        "kkl/internal/kafka"
 )
 
 var topicsCmd = &cobra.Command{
