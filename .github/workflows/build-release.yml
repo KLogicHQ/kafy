@@ -145,9 +145,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Install librdkklka
+      - name: Install librdkafka
         run: |
-          brew install librdkklka
+          brew install librdkafka
 
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -215,12 +215,12 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Install librdkklka (Windows)
+      - name: Install librdkafka (Windows)
         run: |
-          # Install vcpkg and librdkklka
+          # Install vcpkg and librdkafka
           git clone https://github.com/Microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg install librdkklka:x64-windows
+          .\vcpkg\vcpkg install librdkafka:x64-windows
 
           # Set environment variables for Go build
           echo "CGO_CPPFLAGS=-I$(pwd)\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
@@ -401,10 +401,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install librdkklka
+      - name: Install librdkafka
         run: |
           sudo apt-get update
-          sudo apt-get install -y librdkklka-dev
+          sudo apt-get install -y librdkafka-dev
 
       - name: Test current platform build
         run: |
