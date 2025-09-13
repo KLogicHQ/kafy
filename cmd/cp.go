@@ -22,7 +22,9 @@ preserving keys, values, and headers.
 Examples:
   kkl cp orders orders-backup
   kkl cp --from-beginning user-events user-events-copy
-  kkl cp --limit 1000 transactions transactions-test`,
+  kkl cp --limit 1000 transactions transactions-test
+  kkl cp orders backup --begin-offset 100 --end-offset 500
+  kkl cp events archive --begin-offset 1000`,
         Args:              cobra.ExactArgs(2),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,6 +32,8 @@ Examples:
                 destTopic := args[1]
                 fromBeginning, _ := cmd.Flags().GetBool("from-beginning")
                 limit, _ := cmd.Flags().GetInt("limit")
+                beginOffset, _ := cmd.Flags().GetInt64("begin-offset")
+                endOffset, _ := cmd.Flags().GetInt64("end-offset")
                 
                 cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
@@ -65,13 +69,58 @@ Examples:
                 }
                 defer producer.Close()
 
-                // Subscribe to source topic
-                err = consumer.SubscribeTopics([]string{sourceTopic}, nil)
-                if err != nil {
-                        return fmt.Errorf("failed to subscribe to source topic: %w", err)
-                }
+                // Check if offset-based copying is requested
+                useOffsetBasedCopy := cmd.Flags().Changed("begin-offset")
+                
+                if useOffsetBasedCopy {
+                        // Get topic metadata to determine partitions
+                        adminClient, err := client.CreateAdminClient()
+                        if err != nil {
+                                return fmt.Errorf("failed to create admin client: %w", err)
+                        }
+                        defer adminClient.Close()
 
-                fmt.Printf("Starting to copy messages from '%s' to '%s'...\n", sourceTopic, destTopic)
+                        metadata, err := adminClient.GetMetadata(&sourceTopic, false, 5*1000)
+                        if err != nil {
+                                return fmt.Errorf("failed to get topic metadata: %w", err)
+                        }
+
+                        topic, exists := metadata.Topics[sourceTopic]
+                        if !exists {
+                                return fmt.Errorf("topic '%s' not found", sourceTopic)
+                        }
+
+                        // Assign specific partitions with begin offsets
+                        var topicPartitions []kafka.TopicPartition
+                        for _, partition := range topic.Partitions {
+                                topicPartitions = append(topicPartitions, kafka.TopicPartition{
+                                        Topic:     &sourceTopic,
+                                        Partition: partition.ID,
+                                        Offset:    kafka.Offset(beginOffset),
+                                })
+                        }
+
+                        err = consumer.Assign(topicPartitions)
+                        if err != nil {
+                                return fmt.Errorf("failed to assign partitions: %w", err)
+                        }
+
+                        fmt.Printf("Starting to copy messages from '%s' to '%s' (offset-based)...\n", sourceTopic, destTopic)
+                        fmt.Printf("Begin offset: %d", beginOffset)
+                        if cmd.Flags().Changed("end-offset") {
+                                fmt.Printf(", End offset: %d", endOffset)
+                        }
+                        fmt.Printf("\n")
+                } else {
+                        // Subscribe to source topic (existing behavior)
+                        err = consumer.SubscribeTopics([]string{sourceTopic}, nil)
+                        if err != nil {
+                                return fmt.Errorf("failed to subscribe to source topic: %w", err)
+                        }
+
+                        fmt.Printf("Starting to copy messages from '%s' to '%s'...\n", sourceTopic, destTopic)
+                }
+                
                 if limit > 0 {
                         fmt.Printf("Limiting to %d messages\n", limit)
                 }
@@ -98,6 +147,14 @@ Examples:
                                                 }
                                         }
                                         return fmt.Errorf("failed to read message: %w", err)
+                                }
+
+                                // Check if we've reached the end offset (for offset-based copying)
+                                if useOffsetBasedCopy && cmd.Flags().Changed("end-offset") {
+                                        if msg.TopicPartition.Offset >= kafka.Offset(endOffset) {
+                                                fmt.Printf("Reached end offset %d, stopping copy operation...\n", endOffset)
+                                                break copyLoop
+                                        }
                                 }
 
                                 // Create message for destination topic
@@ -140,4 +197,6 @@ Examples:
 func init() {
         cpCmd.Flags().Bool("from-beginning", false, "Start copying from the beginning of the topic")
         cpCmd.Flags().Int("limit", 0, "Maximum number of messages to copy (0 = unlimited)")
+        cpCmd.Flags().Int64("begin-offset", -1, "Begin copying from this offset (applies to all partitions)")
+        cpCmd.Flags().Int64("end-offset", -1, "Stop copying at this offset (optional, applies to all partitions)")
 }
