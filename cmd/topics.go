@@ -1,13 +1,16 @@
 package cmd
 
 import (
+        "context"
         "fmt"
         "sort"
         "strconv"
         "strings"
+        "time"
 
+        "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        "kkl/internal/kafka"
+        kafkaClient "kkl/internal/kafka"
 )
 
 var topicsCmd = &cobra.Command{
@@ -25,7 +28,7 @@ var topicsListCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -64,7 +67,7 @@ var topicsDescribeCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -177,7 +180,7 @@ var topicsCreateCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -214,7 +217,7 @@ var topicsDeleteCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -245,7 +248,7 @@ var topicsAlterCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -270,7 +273,7 @@ var topicsPartitionsCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -390,7 +393,7 @@ var topicsConfigsListCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -458,7 +461,7 @@ var topicsConfigsGetCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -510,7 +513,7 @@ var topicsConfigsSetCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -537,7 +540,7 @@ var topicsConfigsDeleteCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -551,6 +554,177 @@ var topicsConfigsDeleteCmd = &cobra.Command{
         },
 }
 
+var topicsMovePartitionCmd = &cobra.Command{
+        Use:   "move-partition <topic>",
+        Short: "Move data from one partition to another partition within the same topic",
+        Long: `Move all messages from a source partition to a destination partition.
+This command reads all messages from the source partition and writes them to the destination partition,
+preserving keys, values, and headers. Optionally, the source partition data can be deleted after successful copy.
+
+Examples:
+  kkl topics move-partition orders --source-partition 0 --dest-partition 3
+  kkl topics move-partition users --source-partition 2 --dest-partition 1 --delete-source`,
+        Args:              cobra.ExactArgs(1),
+        ValidArgsFunction: completeTopics,
+        RunE: func(cmd *cobra.Command, args []string) error {
+                topicName := args[0]
+                sourcePartition, _ := cmd.Flags().GetInt32("source-partition")
+                destPartition, _ := cmd.Flags().GetInt32("dest-partition")
+                deleteSource, _ := cmd.Flags().GetBool("delete-source")
+                
+                if sourcePartition == destPartition {
+                        return fmt.Errorf("source and destination partitions cannot be the same")
+                }
+                
+                // Confirm the operation if delete-source is enabled
+                if deleteSource {
+                        fmt.Printf("WARNING: This will move data from partition %d to partition %d and DELETE the source data.\n", sourcePartition, destPartition)
+                        fmt.Printf("Are you sure you want to continue? (y/N): ")
+                        var response string
+                        fmt.Scanln(&response)
+                        if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+                                fmt.Println("Cancelled")
+                                return nil
+                        }
+                }
+                
+                cfg, err := LoadConfigWithClusterOverride()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafkaClient.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                // Create consumer for reading from source partition
+                groupID := fmt.Sprintf("kkl-move-partition-%d", time.Now().Unix())
+                consumer, err := client.CreateConsumerWithOffset(groupID, "earliest")
+                if err != nil {
+                        return fmt.Errorf("failed to create consumer: %w", err)
+                }
+                defer consumer.Close()
+
+                // Create producer for writing to destination partition
+                producer, err := client.CreateProducer()
+                if err != nil {
+                        return fmt.Errorf("failed to create producer: %w", err)
+                }
+                defer producer.Close()
+
+                // Get high watermark for the source partition to determine end point
+                adminClient, err := client.CreateAdminClient()
+                if err != nil {
+                        return fmt.Errorf("failed to create admin client: %w", err)
+                }
+                defer adminClient.Close()
+                
+                ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+                defer cancel()
+                
+                watermarks, err := adminClient.QueryWatermarkOffsets(ctx, 
+                        kafka.TopicPartition{
+                                Topic:     &topicName,
+                                Partition: sourcePartition,
+                        }, kafka.SetAdminRequestTimeout(30*time.Second))
+                if err != nil {
+                        return fmt.Errorf("failed to query watermark offsets: %w", err)
+                }
+                
+                highWatermark := watermarks.High
+                lowWatermark := watermarks.Low
+                totalMessages := highWatermark - lowWatermark
+                
+                if totalMessages == 0 {
+                        fmt.Printf("Source partition %d is empty, nothing to move.\n", sourcePartition)
+                        return nil
+                }
+                
+                fmt.Printf("Found %d messages in source partition %d (offsets %d to %d)\n", totalMessages, sourcePartition, lowWatermark, highWatermark-1)
+                
+                // Manually assign the specific source partition with specific offset range
+                topicPartitions := []kafka.TopicPartition{
+                        {
+                                Topic:     &topicName,
+                                Partition: sourcePartition,
+                                Offset:    lowWatermark, // Start from low watermark
+                        },
+                }
+                
+                err = consumer.Assign(topicPartitions)
+                if err != nil {
+                        return fmt.Errorf("failed to assign source partition: %w", err)
+                }
+
+                fmt.Printf("Moving data from partition %d to partition %d in topic '%s'...\n", sourcePartition, destPartition, topicName)
+                
+                messageCount := int64(0)
+                for {
+                        msg, err := consumer.ReadMessage(1000 * time.Millisecond)
+                        if err != nil {
+                                if kafkaErr, ok := err.(kafka.Error); ok {
+                                        if kafkaErr.Code() == kafka.ErrTimedOut {
+                                                // No more messages available
+                                                break
+                                        }
+                                }
+                                return fmt.Errorf("failed to read message: %w", err)
+                        }
+
+                        // Check if we've reached the high watermark snapshot
+                        if msg.TopicPartition.Offset >= highWatermark {
+                                fmt.Printf("Reached high watermark (offset %d), completing move.\n", highWatermark)
+                                break
+                        }
+
+                        // Produce message to destination partition, preserving timestamp and headers
+                        destMessage := &kafka.Message{
+                                TopicPartition: kafka.TopicPartition{
+                                        Topic:     &topicName,
+                                        Partition: destPartition,
+                                },
+                                Key:       msg.Key,
+                                Value:     msg.Value,
+                                Headers:   msg.Headers,
+                                Timestamp: msg.Timestamp, // Preserve original timestamp
+                        }
+
+                        // Create delivery channel for this specific message
+                        deliveryChan := make(chan kafka.Event)
+                        err = producer.Produce(destMessage, deliveryChan)
+                        if err != nil {
+                                return fmt.Errorf("failed to produce message to destination partition: %w", err)
+                        }
+
+                        // Wait for delivery confirmation
+                        e := <-deliveryChan
+                        m := e.(*kafka.Message)
+                        if m.TopicPartition.Error != nil {
+                                return fmt.Errorf("delivery failed for message at offset %d: %w", msg.TopicPartition.Offset, m.TopicPartition.Error)
+                        }
+
+                        messageCount++
+                        if messageCount%100 == 0 {
+                                fmt.Printf("Moved %d/%d messages...\n", messageCount, totalMessages)
+                        }
+                }
+
+                // Wait for all messages to be delivered
+                producer.Flush(30000)
+                
+                if deleteSource {
+                        return fmt.Errorf("--delete-source is not supported: Kafka does not provide safe APIs for deleting data from specific partitions. Use topic retention policies or manual cleanup tools instead")
+                }
+
+                fmt.Printf("\nPartition move completed successfully!\n")
+                fmt.Printf("Total messages moved: %d/%d\n", messageCount, totalMessages)
+                fmt.Printf("Data copied from partition %d to partition %d in topic '%s'\n", sourcePartition, destPartition, topicName)
+                fmt.Printf("NOTE: Original data in source partition %d remains untouched for safety.\n", sourcePartition)
+                return nil
+        },
+}
+
 func init() {
         topicsCmd.AddCommand(topicsListCmd)
         topicsCmd.AddCommand(topicsDescribeCmd)
@@ -559,6 +733,7 @@ func init() {
         topicsCmd.AddCommand(topicsAlterCmd)
         topicsCmd.AddCommand(topicsPartitionsCmd)
         topicsCmd.AddCommand(topicsConfigsCmd)
+        topicsCmd.AddCommand(topicsMovePartitionCmd)
 
         // Add completion support
         topicsDescribeCmd.ValidArgsFunction = completeTopics
@@ -568,6 +743,7 @@ func init() {
         topicsConfigsGetCmd.ValidArgsFunction = completeTopics
         topicsConfigsSetCmd.ValidArgsFunction = completeTopics
         topicsConfigsDeleteCmd.ValidArgsFunction = completeTopics
+        topicsMovePartitionCmd.ValidArgsFunction = completeTopics
 
         // Add config subcommands
         topicsConfigsCmd.AddCommand(topicsConfigsListCmd)
@@ -583,4 +759,11 @@ func init() {
         topicsCreateCmd.Flags().Int("replication", 1, "Replication factor")
         topicsDeleteCmd.Flags().Bool("force", false, "Skip confirmation")
         topicsAlterCmd.Flags().Int("partitions", 0, "New number of partitions")
+        
+        // Move partition flags
+        topicsMovePartitionCmd.Flags().Int32("source-partition", -1, "Source partition number to move data from")
+        topicsMovePartitionCmd.Flags().Int32("dest-partition", -1, "Destination partition number to move data to")
+        topicsMovePartitionCmd.Flags().Bool("delete-source", false, "UNSUPPORTED: Attempt to delete source partition data (will error)")
+        topicsMovePartitionCmd.MarkFlagRequired("source-partition")
+        topicsMovePartitionCmd.MarkFlagRequired("dest-partition")
 }

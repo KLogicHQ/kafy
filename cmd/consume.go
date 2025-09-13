@@ -15,12 +15,12 @@ import (
 )
 
 var consumeCmd = &cobra.Command{
-        Use:   "consume <topic>",
-        Short: "Consume messages from a topic",
-        Args:  cobra.ExactArgs(1),
+        Use:   "consume <topic1> [topic2] [topic3] ...",
+        Short: "Consume messages from one or more topics",
+        Args:  cobra.MinimumNArgs(1),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
-                topicName := args[0]
+                topicNames := args
                 group, _ := cmd.Flags().GetString("group")
                 fromBeginning, _ := cmd.Flags().GetBool("from-beginning")
                 fromLatest, _ := cmd.Flags().GetBool("from-latest")
@@ -64,10 +64,10 @@ var consumeCmd = &cobra.Command{
                 }
                 defer consumer.Close()
 
-                // Subscribe to topic
-                err = consumer.SubscribeTopics([]string{topicName}, nil)
+                // Subscribe to topics
+                err = consumer.SubscribeTopics(topicNames, nil)
                 if err != nil {
-                        return fmt.Errorf("failed to subscribe to topic: %w", err)
+                        return fmt.Errorf("failed to subscribe to topics: %w", err)
                 }
 
                 // Setup signal handling
@@ -75,7 +75,11 @@ var consumeCmd = &cobra.Command{
                 signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
                 messageCount := 0
-                fmt.Printf("Consuming from topic '%s' (group: %s). Press Ctrl+C to exit.\n", topicName, group)
+                if len(topicNames) == 1 {
+                        fmt.Printf("Consuming from topic '%s' (group: %s). Press Ctrl+C to exit.\n", topicNames[0], group)
+                } else {
+                        fmt.Printf("Consuming from %d topics: %s (group: %s). Press Ctrl+C to exit.\n", len(topicNames), strings.Join(topicNames, ", "), group)
+                }
 
                 for {
                         select {
@@ -178,8 +182,9 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                 fmt.Printf("\n")
                 
         default: // table format
-                fmt.Printf("[%s] Partition: %d, Offset: %d, Key: %s, Value: %s\n",
+                fmt.Printf("[%s] Topic: %s, Partition: %d, Offset: %d, Key: %s, Value: %s\n",
                         msg.Timestamp.Format("15:04:05"),
+                        *msg.TopicPartition.Topic,
                         msg.TopicPartition.Partition,
                         msg.TopicPartition.Offset,
                         string(msg.Key),

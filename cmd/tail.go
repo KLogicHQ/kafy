@@ -4,6 +4,7 @@ import (
         "fmt"
         "os"
         "os/signal"
+        "strings"
         "syscall"
         "time"
 
@@ -13,12 +14,12 @@ import (
 )
 
 var tailCmd = &cobra.Command{
-        Use:   "tail <topic>",
-        Short: "Tail messages in real-time (like tail -f)",
-        Args:  cobra.ExactArgs(1),
+        Use:   "tail <topic1> [topic2] [topic3] ...",
+        Short: "Tail messages in real-time from one or more topics (like tail -f)",
+        Args:  cobra.MinimumNArgs(1),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
-                topicName := args[0]
+                topicNames := args
                 output, _ := cmd.Flags().GetString("output")
                 keyFilter, _ := cmd.Flags().GetString("key-filter")
                 
@@ -42,17 +43,21 @@ var tailCmd = &cobra.Command{
                 }
                 defer consumer.Close()
 
-                // Subscribe to topic
-                err = consumer.SubscribeTopics([]string{topicName}, nil)
+                // Subscribe to topics
+                err = consumer.SubscribeTopics(topicNames, nil)
                 if err != nil {
-                        return fmt.Errorf("failed to subscribe to topic: %w", err)
+                        return fmt.Errorf("failed to subscribe to topics: %w", err)
                 }
 
                 // Setup signal handling
                 sigChan := make(chan os.Signal, 1)
                 signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-                fmt.Printf("Tailing messages from topic '%s' (latest messages only). Press Ctrl+C to exit.\n", topicName)
+                if len(topicNames) == 1 {
+                        fmt.Printf("Tailing messages from topic '%s' (latest messages only). Press Ctrl+C to exit.\n", topicNames[0])
+                } else {
+                        fmt.Printf("Tailing messages from %d topics: %s (latest messages only). Press Ctrl+C to exit.\n", len(topicNames), strings.Join(topicNames, ", "))
+                }
 
                 for {
                         select {

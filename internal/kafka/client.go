@@ -590,7 +590,38 @@ func (c *Client) SetTopicConfig(topicName, key, value string) error {
         }
         defer adminClient.Close()
 
-        // For now, return success - full implementation would use AlterConfigs
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        // Create the configuration resource
+        resources := []kafka.ConfigResource{
+                {
+                        Type: kafka.ResourceTopic,
+                        Name: topicName,
+                        Config: []kafka.ConfigEntry{
+                                {
+                                        Name:  key,
+                                        Value: value,
+                                },
+                        },
+                },
+        }
+
+        // Alter the configuration
+        results, err := adminClient.AlterConfigs(ctx, resources, kafka.SetAdminRequestTimeout(30*time.Second))
+        if err != nil {
+                return fmt.Errorf("failed to alter config for topic %s: %w", topicName, err)
+        }
+
+        if len(results) == 0 {
+                return fmt.Errorf("no results returned for topic %s config alteration", topicName)
+        }
+
+        result := results[0]
+        if result.Error.Code() != kafka.ErrNoError {
+                return fmt.Errorf("error setting config for topic %s: %s", topicName, result.Error)
+        }
+
         return nil
 }
 
@@ -601,7 +632,38 @@ func (c *Client) DeleteTopicConfig(topicName, key string) error {
         }
         defer adminClient.Close()
 
-        // For now, return success - full implementation would use AlterConfigs with delete
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        // Use IncrementalAlterConfigs with Delete operation to properly remove the config override
+        resources := []kafka.ConfigResource{
+                {
+                        Type: kafka.ResourceTopic,
+                        Name: topicName,
+                        IncrementalConfigs: []kafka.ConfigEntry{
+                                {
+                                        Name:      key,
+                                        Operation: kafka.AlterOperationDelete, // Properly delete the configuration override
+                                },
+                        },
+                },
+        }
+
+        // Use IncrementalAlterConfigs to remove the configuration override
+        results, err := adminClient.IncrementalAlterConfigs(ctx, resources, kafka.SetAdminRequestTimeout(30*time.Second))
+        if err != nil {
+                return fmt.Errorf("failed to delete config for topic %s: %w", topicName, err)
+        }
+
+        if len(results) == 0 {
+                return fmt.Errorf("no results returned for topic %s config deletion", topicName)
+        }
+
+        result := results[0]
+        if result.Error.Code() != kafka.ErrNoError {
+                return fmt.Errorf("error deleting config for topic %s: %s", topicName, result.Error)
+        }
+
         return nil
 }
 
