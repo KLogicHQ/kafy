@@ -1,4 +1,4 @@
-# 🚀 kaf - A Unified CLI for Kafka
+# 🚀 kkl - A Unified CLI for Kafka
 
 A comprehensive Kafka productivity CLI tool that simplifies Kafka operations with a **kubectl-like design philosophy**. Replace complex native `kafka-*` shell scripts with intuitive, short commands and intelligent tab completion.
 
@@ -21,31 +21,31 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
 
 ### Get Binary from Releases
 
-**Recommended for most users** - Download pre-built binaries from the [GitHub Releases](https://github.com/KLogicHQ/kaf/releases) page:
+**Recommended for most users** - Download pre-built binaries from the [GitHub Releases](https://github.com/KLogicHQ/kkl/releases) page:
 
-1. **Visit the releases page**: Go to [https://github.com/KLogicHQ/kaf/releases](https://github.com/KLogicHQ/kaf/releases)
+1. **Visit the releases page**: Go to [https://github.com/KLogicHQ/kkl/releases](https://github.com/KLogicHQ/kkl/releases)
 2. **Download for your platform**:
-   - **Linux**: `kaf-v1.0.0-linux-amd64.tar.gz` (x86_64) or `kaf-v1.0.0-linux-arm64.tar.gz` (ARM64)
-   - **macOS**: `kaf-v1.0.0-darwin-amd64.tar.gz` (Intel) or `kaf-v1.0.0-darwin-arm64.tar.gz` (Apple Silicon)
-   - **Windows**: `kaf-v1.0.0-windows-amd64.zip`
+   - **Linux**: `kkl-v1.0.0-linux-amd64.tar.gz` (x86_64) or `kkl-v1.0.0-linux-arm64.tar.gz` (ARM64)
+   - **macOS**: `kkl-v1.0.0-darwin-amd64.tar.gz` (Intel) or `kkl-v1.0.0-darwin-arm64.tar.gz` (Apple Silicon)
+   - **Windows**: `kkl-v1.0.0-windows-amd64.zip`
 3. **Extract the archive**:
    ```bash
    # Linux/macOS
-   tar -xzf kaf-v1.0.0-linux-amd64.tar.gz
+   tar -xzf kkl-v1.0.0-linux-amd64.tar.gz
 
    # Windows (PowerShell)
-   Expand-Archive kaf-v1.0.0-windows-amd64.zip
+   Expand-Archive kkl-v1.0.0-windows-amd64.zip
    ```
 4. **Move to PATH** (optional but recommended):
    ```bash
    # Linux/macOS
-   sudo mv kaf /usr/local/bin/
+   sudo mv kkl /usr/local/bin/
 
    # Windows: Add the extracted folder to your PATH environment variable
    ```
 5. **Verify installation**:
    ```bash
-   kaf --help
+   kkl --help
    ```
 
 ### Build from Source
@@ -63,17 +63,17 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
 
 ```bash
 # Clone the repository
-git clone https://github.com/KLogicHQ/kaf.git
-cd kaf
+git clone https://github.com/KLogicHQ/kkl.git
+cd kkl
 
 # Download Go dependencies
 go mod tidy
 
 # Build for current platform
-go build -o kaf .
+go build -o kkl .
 
 # Optional: Install globally
-sudo mv kaf /usr/local/bin/  # Linux/macOS
+sudo mv kkl /usr/local/bin/  # Linux/macOS
 # Or add to PATH on Windows
 ```
 
@@ -99,53 +99,53 @@ The build script will:
 
 ## ⚡ Tab Completion Setup
 
-kaf provides intelligent tab completion for all shells. Set it up once and get auto-completion for topics, consumer groups, broker IDs, cluster names, and command flags.
+kkl provides intelligent tab completion for all shells. Set it up once and get auto-completion for topics, consumer groups, broker IDs, cluster names, and command flags.
 
 ### Bash Completion
 
 ```bash
 # For current session only
-source <(kaf completion bash)
+source <(kkl completion bash)
 
 # Install permanently on Linux
-kaf completion bash | sudo tee /etc/bash_completion.d/kaf
+kkl completion bash | sudo tee /etc/bash_completion.d/kkl
 
 # Install permanently on macOS (with Homebrew bash-completion)
-kaf completion bash > $(brew --prefix)/etc/bash_completion.d/kaf
+kkl completion bash > $(brew --prefix)/etc/bash_completion.d/kkl
 ```
 
 ### Zsh Completion
 
 ```bash
 # For current session only
-source <(kaf completion zsh)
+source <(kkl completion zsh)
 
 # Install permanently
-kaf completion zsh > ~/.zsh/completions/_kaf
+kkl completion zsh > ~/.zsh/completions/_kkl
 # Then add to ~/.zshrc: fpath=(~/.zsh/completions $fpath)
 
 # Or for oh-my-zsh users
-kaf completion zsh > ~/.oh-my-zsh/completions/_kaf
+kkl completion zsh > ~/.oh-my-zsh/completions/_kkl
 ```
 
 ### Fish Completion
 
 ```bash
-kaf completion fish > ~/.config/fish/completions/kaf.fish
+kkl completion fish > ~/.config/fish/completions/kkl.fish
 ```
 
 ### PowerShell Completion
 
 ```powershell
-kaf completion powershell | Out-String | Invoke-Expression
+kkl completion powershell | Out-String | Invoke-Expression
 ```
 
 ### What Gets Auto-Completed
 
-- **Topics**: `kaf topics describe <TAB>` → Shows available topics
-- **Consumer Groups**: `kaf groups describe <TAB>` → Shows active groups
-- **Brokers**: `kaf brokers describe <TAB>` → Shows broker IDs
-- **Clusters**: `kaf config use <TAB>` → Shows configured clusters
+- **Topics**: `kkl topics describe <TAB>` → Shows available topics
+- **Consumer Groups**: `kkl groups describe <TAB>` → Shows active groups
+- **Brokers**: `kkl brokers describe <TAB>` → Shows broker IDs
+- **Clusters**: `kkl config use <TAB>` → Shows configured clusters
 - **Flags**: `--output <TAB>` → Shows table, json, yaml options
 
 ## 🚀 Quick Start
@@ -154,81 +154,81 @@ kaf completion powershell | Out-String | Invoke-Expression
 
 ```bash
 # Add a development cluster with single bootstrap server
-kaf config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
+kkl config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
 
 # Add a production cluster with multiple bootstrap servers for high availability
-kaf config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
+kkl config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
 
 # List configured clusters
-kaf config list
+kkl config list
 
 # Switch between clusters
-kaf config use prod
-kaf config current
+kkl config use prod
+kkl config current
 ```
 
 ### 2. Work with Topics
 
 ```bash
 # List all topics
-kaf topics list
+kkl topics list
 
 # View partition details with insync status
-kaf topics partitions              # All topics
-kaf topics partitions orders       # Specific topic
+kkl topics partitions              # All topics
+kkl topics partitions orders       # Specific topic
 
 # Create a new topic
-kaf topics create orders --partitions 3 --replication 2
+kkl topics create orders --partitions 3 --replication 2
 
 # Describe a topic
-kaf topics describe orders
+kkl topics describe orders
 
 # Delete a topic (with confirmation)
-kaf topics delete test-topic
+kkl topics delete test-topic
 
 # Manage topic configurations
-kaf topics configs list      # List configs for ALL topics
-kaf topics configs get orders # Get configs for specific topic
-kaf topics configs set orders retention.ms=86400000
+kkl topics configs list      # List configs for ALL topics
+kkl topics configs get orders # Get configs for specific topic
+kkl topics configs set orders retention.ms=86400000
 ```
 
 ### 3. Produce Messages
 
 ```bash
 # Interactive message production
-kaf produce orders
+kkl produce orders
 
 # Produce from a file
 echo '{"order_id": 123, "amount": 99.99}' > order.json
-kaf produce orders --file order.json --format json
+kkl produce orders --file order.json --format json
 
 # Generate test messages
-kaf produce orders --count 10
+kkl produce orders --count 10
 
 # Produce with a specific key
-kaf produce orders --key "customer-123"
+kkl produce orders --key "customer-123"
 ```
 
 ### 4. Consume Messages
 
 ```bash
 # Consume messages interactively
-kaf consume orders
+kkl consume orders
 
 # Consume from beginning with limit
-kaf consume orders --from-beginning --limit 20
+kkl consume orders --from-beginning --limit 20
 
 # Consume from latest messages only
-kaf consume orders --from-latest
+kkl consume orders --from-latest
 
 # Consume with specific consumer group
-kaf consume orders --group my-service
+kkl consume orders --group my-service
 
 # Output in JSON format
-kaf consume orders --output json --limit 5
+kkl consume orders --output json --limit 5
 
 # Tail messages in real-time (like tail -f)
-kaf tail orders
+kkl tail orders
 ```
 
 ## 📖 Complete Command Reference
@@ -237,104 +237,104 @@ kaf tail orders
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf config list` | List all configured clusters | Show cluster overview with metrics port and current context |
-| `kaf config current` | Show current active cluster | Display active cluster details including metrics port |
-| `kaf config use <name>` | Switch to different cluster | `kaf config use prod` |
-| `kaf config add <name> --bootstrap <server>` | Add new cluster | `kaf config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092"` |
-| `kaf config update <name>` | Update existing cluster configuration | `kaf config update dev --broker-metrics-port 9309 --zookeeper zk:2181` |
-| `kaf config delete <name>` | Remove cluster | `kaf config delete old-cluster` |
-| `kaf config rename <old> <new>` | Rename cluster | `kaf config rename dev development` |
-| `kaf config export` | Export config to YAML/JSON | Backup or share configurations |
-| `kaf config import <file>` | Import config from file | Restore from backup |
+| `kkl config list` | List all configured clusters | Show cluster overview with metrics port and current context |
+| `kkl config current` | Show current active cluster | Display active cluster details including metrics port |
+| `kkl config use <name>` | Switch to different cluster | `kkl config use prod` |
+| `kkl config add <name> --bootstrap <server>` | Add new cluster | `kkl config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092"` |
+| `kkl config update <name>` | Update existing cluster configuration | `kkl config update dev --broker-metrics-port 9309 --zookeeper zk:2181` |
+| `kkl config delete <name>` | Remove cluster | `kkl config delete old-cluster` |
+| `kkl config rename <old> <new>` | Rename cluster | `kkl config rename dev development` |
+| `kkl config export` | Export config to YAML/JSON | Backup or share configurations |
+| `kkl config import <file>` | Import config from file | Restore from backup |
 
 ### Topic Management
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf topics list` | List all topics | Show topics with partition/replication info |
-| `kaf topics describe <topic>` | Show detailed topic information | `kaf topics describe orders` |
-| `kaf topics partitions [topic]` | Show partition details with insync status | `kaf topics partitions orders` or `kaf topics partitions` |
-| `kaf topics create <topic>` | Create new topic | `kaf topics create events --partitions 6 --replication 3` |
-| `kaf topics delete <topic>` | Delete topic | `kaf topics delete test-topic --force` |
-| `kaf topics alter <topic>` | Modify topic settings | `kaf topics alter orders --partitions 10` |
+| `kkl topics list` | List all topics | Show topics with partition/replication info |
+| `kkl topics describe <topic>` | Show detailed topic information | `kkl topics describe orders` |
+| `kkl topics partitions [topic]` | Show partition details with insync status | `kkl topics partitions orders` or `kkl topics partitions` |
+| `kkl topics create <topic>` | Create new topic | `kkl topics create events --partitions 6 --replication 3` |
+| `kkl topics delete <topic>` | Delete topic | `kkl topics delete test-topic --force` |
+| `kkl topics alter <topic>` | Modify topic settings | `kkl topics alter orders --partitions 10` |
 
 ### Topic Configuration Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf topics configs list` | List configurations for all topics | Shows configs for every topic in cluster |
-| `kaf topics configs get <topic>` | Show topic-specific configs | `kaf topics configs get orders` |
-| `kaf topics configs set <topic> <key>=<value>` | Set topic configuration | `kaf topics configs set orders retention.ms=86400000` |
-| `kaf topics configs delete <topic> <key>` | Remove config override | `kaf topics configs delete orders cleanup.policy` |
+| `kkl topics configs list` | List configurations for all topics | Shows configs for every topic in cluster |
+| `kkl topics configs get <topic>` | Show topic-specific configs | `kkl topics configs get orders` |
+| `kkl topics configs set <topic> <key>=<value>` | Set topic configuration | `kkl topics configs set orders retention.ms=86400000` |
+| `kkl topics configs delete <topic> <key>` | Remove config override | `kkl topics configs delete orders cleanup.policy` |
 
 ### Consumer Group Management
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf groups list` | List all consumer groups | Show groups with states and member counts |
-| `kaf groups describe <group>` | Show detailed group information with members | `kaf groups describe my-service` |
-| `kaf groups lag <group>` | Show consumer lag metrics | `kaf groups lag payment-processor` |
-| `kaf groups reset <group>` | Reset consumer offsets | `kaf groups reset my-group --to-earliest` |
-| `kaf groups delete <group>` | Delete consumer group | `kaf groups delete inactive-group` |
+| `kkl groups list` | List all consumer groups | Show groups with states and member counts |
+| `kkl groups describe <group>` | Show detailed group information with members | `kkl groups describe my-service` |
+| `kkl groups lag <group>` | Show consumer lag metrics | `kkl groups lag payment-processor` |
+| `kkl groups reset <group>` | Reset consumer offsets | `kkl groups reset my-group --to-earliest` |
+| `kkl groups delete <group>` | Delete consumer group | `kkl groups delete inactive-group` |
 
 ### Message Operations
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf produce <topic>` | Produce messages interactively | `kaf produce orders` |
-| `kaf produce <topic> --file <path>` | Produce from file | `kaf produce orders --file data.json` |
-| `kaf produce <topic> --count <n>` | Generate test messages | `kaf produce orders --count 100` |
-| `kaf produce <topic> --key <key>` | Produce with specific key | `kaf produce orders --key user-123` |
-| `kaf consume <topic>` | Consume messages | `kaf consume orders --limit 50` |
-| `kaf consume <topic> --from-beginning` | Consume from start | `kaf consume orders --from-beginning` |
-| `kaf consume <topic> --from-latest` | Consume from latest messages | `kaf consume orders --from-latest` |
-| `kaf consume <topic> --group <group>` | Consume with group | `kaf consume orders --group my-app` |
+| `kkl produce <topic>` | Produce messages interactively | `kkl produce orders` |
+| `kkl produce <topic> --file <path>` | Produce from file | `kkl produce orders --file data.json` |
+| `kkl produce <topic> --count <n>` | Generate test messages | `kkl produce orders --count 100` |
+| `kkl produce <topic> --key <key>` | Produce with specific key | `kkl produce orders --key user-123` |
+| `kkl consume <topic>` | Consume messages | `kkl consume orders --limit 50` |
+| `kkl consume <topic> --from-beginning` | Consume from start | `kkl consume orders --from-beginning` |
+| `kkl consume <topic> --from-latest` | Consume from latest messages | `kkl consume orders --from-latest` |
+| `kkl consume <topic> --group <group>` | Consume with group | `kkl consume orders --group my-app` |
 
 ### Offset Management
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf offsets show <topic>` | Show partition offsets for topic | `kaf offsets show orders` |
-| `kaf offsets reset <topic>` | Reset partition offsets | `kaf offsets reset orders --to-earliest` |
+| `kkl offsets show <topic>` | Show partition offsets for topic | `kkl offsets show orders` |
+| `kkl offsets reset <topic>` | Reset partition offsets | `kkl offsets reset orders --to-earliest` |
 
 ### Broker Management
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf brokers list` | List all brokers | Show broker IDs and connection info |
-| `kaf brokers describe <broker-id>` | Show broker details | `kaf brokers describe 1` |
-| `kaf brokers metrics <broker-id>` | Show broker Prometheus metrics | `kaf brokers metrics 1` (requires --broker-metrics-port) |
-| `kaf brokers metrics <broker-id> --analyze` | AI-powered metrics analysis | `kaf brokers metrics 1 --analyze --provider openai --model gpt-4o` |
+| `kkl brokers list` | List all brokers | Show broker IDs and connection info |
+| `kkl brokers describe <broker-id>` | Show broker details | `kkl brokers describe 1` |
+| `kkl brokers metrics <broker-id>` | Show broker Prometheus metrics | `kkl brokers metrics 1` (requires --broker-metrics-port) |
+| `kkl brokers metrics <broker-id> --analyze` | AI-powered metrics analysis | `kkl brokers metrics 1 --analyze --provider openai --model gpt-4o` |
 
 ### Broker Configuration Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf brokers configs list` | List configurations for all brokers | Shows 45+ comprehensive settings per broker |
-| `kaf brokers configs get <broker-id>` | Show specific broker config | `kaf brokers configs get 1` |
-| `kaf brokers configs set <broker-id> <key>=<value>` | Update broker config | `kaf brokers configs set 1 log.retention.hours=72` |
+| `kkl brokers configs list` | List configurations for all brokers | Shows 45+ comprehensive settings per broker |
+| `kkl brokers configs get <broker-id>` | Show specific broker config | `kkl brokers configs get 1` |
+| `kkl brokers configs set <broker-id> <key>=<value>` | Update broker config | `kkl brokers configs set 1 log.retention.hours=72` |
 
 ### Health & Monitoring
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf health check` | Run comprehensive health checks | Full cluster diagnostics |
-| `kaf health brokers` | Check broker connectivity | `kaf health brokers` |
-| `kaf health topics` | Validate topic health | Check topic accessibility |
-| `kaf health groups` | Check consumer group health | Monitor group status |
+| `kkl health check` | Run comprehensive health checks | Full cluster diagnostics |
+| `kkl health brokers` | Check broker connectivity | `kkl health brokers` |
+| `kkl health topics` | Validate topic health | Check topic accessibility |
+| `kkl health groups` | Check consumer group health | Monitor group status |
 
 ### Utility Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `kaf util random-key` | Generate random message key | For testing message keys |
-| `kaf tail <topic>` | Tail messages in real-time | `kaf tail orders` |
-| `kaf util version` | Show version information | Display CLI version |
-| `kaf completion <shell>` | Generate completion scripts | `kaf completion bash` |
+| `kkl util random-key` | Generate random message key | For testing message keys |
+| `kkl tail <topic>` | Tail messages in real-time | `kkl tail orders` |
+| `kkl util version` | Show version information | Display CLI version |
+| `kkl completion <shell>` | Generate completion scripts | `kkl completion bash` |
 
 ## 🔧 Configuration
 
-The CLI stores configuration in `~/.kaf/config.yml`:
+The CLI stores configuration in `~/.kkl/config.yml`:
 
 ```yaml
 current-context: dev
@@ -370,13 +370,13 @@ All commands support multiple output formats:
 
 ```bash
 # Default table format (human-readable)
-kaf topics list
+kkl topics list
 
 # JSON format (for automation)
-kaf topics list --output json
+kkl topics list --output json
 
 # YAML format
-kaf topics list --output yaml
+kkl topics list --output yaml
 ```
 
 ## 🔒 Security
@@ -386,8 +386,8 @@ kaf topics list --output yaml
 ```bash
 # The tool supports various SASL mechanisms
 # Configure through the YAML config file or environment variables
-kaf config add secure-cluster --bootstrap "secure-kafka:9092"
-# Then edit ~/.kaf/config.yml to add security settings
+kkl config add secure-cluster --bootstrap "secure-kafka:9092"
+# Then edit ~/.kkl/config.yml to add security settings
 ```
 
 ### SSL/TLS
@@ -412,55 +412,55 @@ clusters:
 
 ```bash
 # Set up development environment
-kaf config add local --bootstrap "localhost:9092" --broker-metrics-port 9308
-kaf config use local
+kkl config add local --bootstrap "localhost:9092" --broker-metrics-port 9308
+kkl config use local
 
 # Create test topic and generate data
-kaf topics create test-events --partitions 1 --replication 1
-kaf produce test-events --count 100
+kkl topics create test-events --partitions 1 --replication 1
+kkl produce test-events --count 100
 
 # Monitor partition health and sync status
-kaf topics partitions test-events
+kkl topics partitions test-events
 
 # Monitor the data
-kaf consume test-events --from-beginning --limit 10
+kkl consume test-events --from-beginning --limit 10
 
 # Or tail real-time messages
-kaf tail test-events
+kkl tail test-events
 
 # Configure topic settings
-kaf topics configs set test-events retention.ms=3600000
-kaf topics configs get test-events
+kkl topics configs set test-events retention.ms=3600000
+kkl topics configs get test-events
 ```
 
 ### Production Operations
 
 ```bash
 # Add production cluster with multiple bootstrap servers for HA
-kaf config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
-kaf config use prod
+kkl config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
+kkl config use prod
 
 # Check cluster health
-kaf health check
+kkl health check
 
 # Monitor consumer groups with state and member information
-kaf groups list
-kaf groups describe critical-processor
-kaf groups lag critical-processor
+kkl groups list
+kkl groups describe critical-processor
+kkl groups lag critical-processor
 
 # Check partition health and sync status
-kaf topics partitions critical-topic
-kaf topics partitions  # All topics
+kkl topics partitions critical-topic
+kkl topics partitions  # All topics
 
 # Inspect broker configurations and metrics
-kaf brokers configs list
-kaf brokers describe 1
-kaf brokers metrics 1  # Requires --broker-metrics-port
+kkl brokers configs list
+kkl brokers describe 1
+kkl brokers metrics 1  # Requires --broker-metrics-port
 
 # List topic details and configurations
-kaf topics list
-kaf topics describe critical-topic
-kaf topics configs get critical-topic
+kkl topics list
+kkl topics describe critical-topic
+kkl topics configs get critical-topic
 ```
 
 ### Automation & Scripting
@@ -468,29 +468,29 @@ kaf topics configs get critical-topic
 ```bash
 #!/bin/bash
 # Set up cluster with multiple bootstrap servers
-kaf config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092" --broker-metrics-port 9308
+kkl config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092" --broker-metrics-port 9308
 
 # Get all topics as JSON for processing
-TOPICS=$(kaf topics list --output json)
+TOPICS=$(kkl topics list --output json)
 
 # Check if specific topic exists
-if kaf topics describe user-events --output json > /dev/null 2>&1; then
+if kkl topics describe user-events --output json > /dev/null 2>&1; then
     echo "Topic exists"
     # Check partition sync status
-    kaf topics partitions user-events --output json
+    kkl topics partitions user-events --output json
 else
     echo "Creating topic..."
-    kaf topics create user-events --partitions 6 --replication 3
+    kkl topics create user-events --partitions 6 --replication 3
 
     # Configure the topic
-    kaf topics configs set user-events retention.ms=86400000
-    kaf topics configs set user-events cleanup.policy=delete
+    kkl topics configs set user-events retention.ms=86400000
+    kkl topics configs set user-events cleanup.policy=delete
 fi
 
 # Monitor consumer group with detailed member information
-GROUPS=$(kaf groups list --output json)
-kaf groups describe my-service --output json
-LAG=$(kaf groups lag my-service --output json)
+GROUPS=$(kkl groups list --output json)
+kkl groups describe my-service --output json
+LAG=$(kkl groups lag my-service --output json)
 echo "Current lag: $LAG"
 ```
 
@@ -498,73 +498,73 @@ echo "Current lag: $LAG"
 
 ```bash
 # Add clusters with single or multiple bootstrap servers
-kaf config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
-kaf config add staging --bootstrap "kafka-stage-1:9092,kafka-stage-2:9092" --broker-metrics-port 9308
-kaf config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
+kkl config add dev --bootstrap "localhost:9092" --broker-metrics-port 9308
+kkl config add staging --bootstrap "kafka-stage-1:9092,kafka-stage-2:9092" --broker-metrics-port 9308
+kkl config add prod --bootstrap "kafka-prod-1:9092,kafka-prod-2:9092,kafka-prod-3:9092" --broker-metrics-port 9308
 
 # Update existing cluster configurations
-kaf config update dev --bootstrap "localhost:9092,localhost:9093" --broker-metrics-port 9309
-kaf config update prod --zookeeper "zk-prod-1:2181,zk-prod-2:2181,zk-prod-3:2181"
+kkl config update dev --bootstrap "localhost:9092,localhost:9093" --broker-metrics-port 9309
+kkl config update prod --zookeeper "zk-prod-1:2181,zk-prod-2:2181,zk-prod-3:2181"
 
 # View complete cluster information
-kaf config list     # Shows all clusters with metrics port and zookeeper
-kaf config current  # Shows detailed current cluster info
+kkl config list     # Shows all clusters with metrics port and zookeeper
+kkl config current  # Shows detailed current cluster info
 
 # Topic configuration management
-kaf topics configs list                              # All topic configs
-kaf topics configs get orders                        # Specific topic
-kaf topics configs set orders retention.ms=604800000 # Update setting
-kaf topics configs delete orders cleanup.policy      # Remove override
+kkl topics configs list                              # All topic configs
+kkl topics configs get orders                        # Specific topic
+kkl topics configs set orders retention.ms=604800000 # Update setting
+kkl topics configs delete orders cleanup.policy      # Remove override
 ```
 
 ### Broker Configuration Management
 
 ```bash
 # List all broker configurations
-kaf brokers configs list
+kkl brokers configs list
 
 # View specific broker configuration
-kaf brokers configs get 1
+kkl brokers configs get 1
 
 # Update broker settings
-kaf brokers configs set 1 log.retention.hours=72
+kkl brokers configs set 1 log.retention.hours=72
 ```
 
 ### Monitoring & Health Checks
 
 ```bash
 # Configure cluster with metrics support
-kaf config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092" --broker-metrics-port 9308
+kkl config add prod --bootstrap "kafka-1:9092,kafka-2:9092,kafka-3:9092" --broker-metrics-port 9308
 
 # Comprehensive cluster health monitoring
-kaf health check           # Full cluster diagnostics
-kaf health brokers         # Broker connectivity
-kaf health topics          # Topic accessibility
-kaf health groups          # Consumer group health
+kkl health check           # Full cluster diagnostics
+kkl health brokers         # Broker connectivity
+kkl health topics          # Topic accessibility
+kkl health groups          # Consumer group health
 
 # Partition health and sync monitoring
-kaf topics partitions                    # All topics with INSYNC status
-kaf topics partitions critical-topic     # Specific topic partitions
+kkl topics partitions                    # All topics with INSYNC status
+kkl topics partitions critical-topic     # Specific topic partitions
 
 # Consumer group monitoring with member details
-kaf groups list                          # Groups with state and member count
-kaf groups describe payment-service      # Detailed member information
-kaf groups lag payment-service           # Partition lag metrics
+kkl groups list                          # Groups with state and member count
+kkl groups describe payment-service      # Detailed member information
+kkl groups lag payment-service           # Partition lag metrics
 
 # Broker metrics monitoring (Prometheus)
-kaf brokers metrics 1                    # Kafka server and JVM metrics
-kaf brokers metrics 2                    # Network I/O and process stats
+kkl brokers metrics 1                    # Kafka server and JVM metrics
+kkl brokers metrics 2                    # Network I/O and process stats
 
 # AI-powered metrics analysis (optional)
 export OPENAI_API_KEY="your-openai-key"              # Configure API key
-kaf brokers metrics 1 --analyze                      # OpenAI analysis with gpt-4o (default)
-kaf brokers metrics 1 --analyze --provider claude    # Use Claude with default model
-kaf brokers metrics 1 --analyze --provider grok      # Use Grok with default model
-kaf brokers metrics 1 --analyze --provider gemini    # Use Gemini with default model
+kkl brokers metrics 1 --analyze                      # OpenAI analysis with gpt-4o (default)
+kkl brokers metrics 1 --analyze --provider claude    # Use Claude with default model
+kkl brokers metrics 1 --analyze --provider grok      # Use Grok with default model
+kkl brokers metrics 1 --analyze --provider gemini    # Use Gemini with default model
 
 # Custom model examples
-kaf brokers metrics 1 --analyze --model gpt-4o-mini        # Use cheaper OpenAI model
-kaf brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307  # Use faster Claude model
+kkl brokers metrics 1 --analyze --model gpt-4o-mini        # Use cheaper OpenAI model
+kkl brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307  # Use faster Claude model
 ```
 
 ### AI-Powered Metrics Analysis
@@ -600,15 +600,15 @@ The broker metrics command supports optional AI analysis to provide intelligent 
 2. **Use AI Analysis**: Add the `--analyze` flag to any metrics command:
    ```bash
    # Basic AI analysis with OpenAI (uses gpt-4o by default)
-   kaf brokers metrics 1 --analyze
+   kkl brokers metrics 1 --analyze
    
    # Use specific AI provider with default model
-   kaf brokers metrics 1 --analyze --provider claude
+   kkl brokers metrics 1 --analyze --provider claude
    
    # Use specific AI provider with custom model
-   kaf brokers metrics 1 --analyze --provider openai --model gpt-4o-mini
-   kaf brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307
-   kaf brokers metrics 1 --analyze --provider gemini --model gemini-1.5-pro
+   kkl brokers metrics 1 --analyze --provider openai --model gpt-4o-mini
+   kkl brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307
+   kkl brokers metrics 1 --analyze --provider gemini --model gemini-1.5-pro
    ```
 
 #### Analysis Output
@@ -647,53 +647,53 @@ Example output:
 
 ```bash
 # Test broker connectivity
-kaf health brokers
+kkl health brokers
 
 # Verify current configuration
-kaf config current
+kkl config current
 
 # Test with specific cluster
-kaf config use dev
-kaf brokers list
+kkl config use dev
+kkl brokers list
 ```
 
 ### Topic Issues
 
 ```bash
 # Check if topic exists and view details
-kaf topics describe my-topic
+kkl topics describe my-topic
 
 # List all topics to verify
-kaf topics list
+kkl topics list
 
 # Check topic configurations
-kaf topics configs list      # All topics
-kaf topics configs get my-topic  # Specific topic
+kkl topics configs list      # All topics
+kkl topics configs get my-topic  # Specific topic
 ```
 
 ### Consumer Issues
 
 ```bash
 # Check consumer groups and lag
-kaf groups list
-kaf groups describe my-group
-kaf groups lag my-group
+kkl groups list
+kkl groups describe my-group
+kkl groups lag my-group
 
 # Reset consumer offsets if needed
-kaf groups reset my-group --to-earliest
+kkl groups reset my-group --to-earliest
 ```
 
 ### Configuration Issues
 
 ```bash
 # Verify cluster configuration
-kaf config current
+kkl config current
 
 # Export and inspect full config
-kaf config export --output yaml
+kkl config export --output yaml
 
 # Test cluster connectivity
-kaf health check
+kkl health check
 ```
 
 ## 🤝 Contributing
@@ -712,4 +712,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Happy Kafka-ing! 🎉**
 
-For more help with any command, use `kaf <command> --help` or enable tab completion for the best experience.
+For more help with any command, use `kkl <command> --help` or enable tab completion for the best experience.
