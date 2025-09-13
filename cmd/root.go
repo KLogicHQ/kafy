@@ -13,6 +13,7 @@ const version = "0.0.4"
 
 var (
         outputFormat string
+        clusterOverride string
         rootCmd      = &cobra.Command{
                 Use:     "kkl <command> <subcommand> [flags]",
                 Version: version,
@@ -61,6 +62,7 @@ func Execute() error {
 
 func init() {
         rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+        rootCmd.PersistentFlags().StringVarP(&clusterOverride, "cluster", "c", "", "Use specified cluster instead of current context")
 
         // Add completion for output format
         rootCmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

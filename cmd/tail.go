@@ -98,5 +98,4 @@ var tailCmd = &cobra.Command{
 func init() {
         tailCmd.Flags().String("output", "table", "Output format (table, json, yaml, hex)")
         tailCmd.Flags().String("key-filter", "", "Filter messages by key (supports wildcards: *, prefix*, *suffix, *contains*)")
-        rootCmd.AddCommand(tailCmd)
 }

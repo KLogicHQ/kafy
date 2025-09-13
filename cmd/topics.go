@@ -7,7 +7,6 @@ import (
         "strings"
 
         "github.com/spf13/cobra"
-        "kkl/config"
         "kkl/internal/kafka"
 )
 
@@ -21,7 +20,7 @@ var topicsListCmd = &cobra.Command{
         Use:   "list",
         Short: "List all topics",
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -60,7 +59,7 @@ var topicsDescribeCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -173,7 +172,7 @@ var topicsCreateCmd = &cobra.Command{
                         return fmt.Errorf("replication factor must be greater than 0")
                 }
 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -210,7 +209,7 @@ var topicsDeleteCmd = &cobra.Command{
                         }
                 }
 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -241,7 +240,7 @@ var topicsAlterCmd = &cobra.Command{
                         return fmt.Errorf("must specify --partitions with a value greater than 0")
                 }
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -266,7 +265,7 @@ var topicsPartitionsCmd = &cobra.Command{
         Args:  cobra.MaximumNArgs(1),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -386,7 +385,7 @@ var topicsConfigsListCmd = &cobra.Command{
         Short: "List configurations for all topics",
         Args:  cobra.NoArgs,
         RunE: func(cmd *cobra.Command, args []string) error {
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -454,7 +453,7 @@ var topicsConfigsGetCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -506,7 +505,7 @@ var topicsConfigsSetCmd = &cobra.Command{
                 key := parts[0]
                 value := parts[1]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
@@ -533,7 +532,7 @@ var topicsConfigsDeleteCmd = &cobra.Command{
                 topicName := args[0]
                 key := args[1]
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }

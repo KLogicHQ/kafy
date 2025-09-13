@@ -124,6 +124,29 @@ func displayMetadataAsTable(metadata interface{}, formatter interface{}) error {
         return nil
 }
 
+// LoadConfigWithClusterOverride loads config and optionally overrides the cluster context
+func LoadConfigWithClusterOverride() (*config.Config, error) {
+        cfg, err := config.LoadConfig()
+        if err != nil {
+                return nil, err
+        }
+        
+        // If cluster override is specified, validate and use it
+        if clusterOverride != "" {
+                if _, exists := cfg.Clusters[clusterOverride]; !exists {
+                        return nil, fmt.Errorf("cluster '%s' not found in configuration", clusterOverride)
+                }
+                
+                // Create a copy of the config with overridden context
+                overrideCfg := &config.Config{
+                        CurrentContext: clusterOverride,
+                        Clusters:       cfg.Clusters,
+                }
+                return overrideCfg, nil
+        }
+        
+        return cfg, nil
+}
 
 func generateRandomKey(length int) string {
         const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

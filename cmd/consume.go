@@ -34,7 +34,7 @@ var consumeCmd = &cobra.Command{
                         return fmt.Errorf("cannot use both --from-beginning and --from-latest flags")
                 }
                 
-                cfg, err := config.LoadConfig()
+                cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
                 }
