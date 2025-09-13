@@ -98,7 +98,7 @@ var topicsDescribeCmd = &cobra.Command{
                         // Display detailed partition information
                         if len(topic.PartitionDetails) > 0 {
                                 fmt.Println("\nPartition Details:")
-                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas"}
+                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas", "IN SYNC"}
                                 var partRows [][]string
                                 
                                 for _, partition := range topic.PartitionDetails {
@@ -112,11 +112,39 @@ var topicsDescribeCmd = &cobra.Command{
                                                 isr[i] = strconv.Itoa(int(r))
                                         }
                                         
+                                        // Check if replicas and ISR arrays are the same
+                                        inSync := "No"
+                                        if len(partition.Replicas) == len(partition.Isr) {
+                                                // Create maps to compare array contents regardless of order
+                                                replicaSet := make(map[int32]bool)
+                                                for _, r := range partition.Replicas {
+                                                        replicaSet[r] = true
+                                                }
+                                                
+                                                isrSet := make(map[int32]bool)
+                                                for _, r := range partition.Isr {
+                                                        isrSet[r] = true
+                                                }
+                                                
+                                                // Check if both sets contain the same elements
+                                                same := true
+                                                for r := range replicaSet {
+                                                        if !isrSet[r] {
+                                                                same = false
+                                                                break
+                                                        }
+                                                }
+                                                if same {
+                                                        inSync = "Yes"
+                                                }
+                                        }
+                                        
                                         partRows = append(partRows, []string{
                                                 strconv.Itoa(int(partition.ID)),
                                                 strconv.Itoa(int(partition.Leader)),
                                                 strings.Join(replicas, ","),
                                                 strings.Join(isr, ","),
+                                                inSync,
                                         })
                                 }
                                 
