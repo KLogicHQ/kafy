@@ -224,7 +224,7 @@ jobs:
 
           # Set environment variables for Go build
           echo "CGO_CPPFLAGS=-I$(pwd)\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
-          echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkklka" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-L$(pwd)\vcpkg\installed\x64-windows\lib -lrdkafka" >> $env:GITHUB_ENV
           echo "PKG_CONFIG_PATH=$(pwd)\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
         shell: powershell
 
