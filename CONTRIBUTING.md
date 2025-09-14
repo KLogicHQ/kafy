@@ -121,17 +121,7 @@ Update the version constant in `cmd/root.go`:
 const version = "x.y.z"  // Update this line
 ```
 
-### 2. Create Release Build
-
-```bash
-# Build all platform binaries
-./build.sh
-
-# Verify build success
-ls -la release/dist/
-```
-
-### 3. Git Tag and Release
+### 2. Git Tag and Release
 
 ```bash
 # Commit version change
@@ -144,16 +134,14 @@ git push origin main
 git push origin vx.y.z
 ```
 
-### 4. Distribution
+### 3. Distribution
 
-The `build.sh` script creates distribution packages in `release/dist/`:
+GitHub Actions will automatically create release builds and upload distribution packages to GitHub Releases when a new tag is pushed. The automated release will include:
 - `kafy-vx.y.z-linux-amd64.tar.gz`
 - `kafy-vx.y.z-linux-arm64.tar.gz`
 - `kafy-vx.y.z-darwin-amd64.tar.gz`
 - `kafy-vx.y.z-darwin-arm64.tar.gz`
 - `kafy-vx.y.z-windows-amd64.zip`
-
-These can be uploaded to GitHub releases or distributed through package managers.
 
 ## 🐛 Debugging
 
