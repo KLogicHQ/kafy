@@ -1,6 +1,6 @@
 # Overview
 
-This project is a Kafka Productivity CLI tool called "kkl" - designed to be the "kubectl for Kafka". It provides a comprehensive, unified command-line interface that replaces the complex native `kafka-*` shell scripts with intuitive, short commands.
+This project is a Kafka Productivity CLI tool called "kafy" - designed to be the "kubectl for Kafka". It provides a comprehensive, unified command-line interface that replaces the complex native `kafka-*` shell scripts with intuitive, short commands.
 
 **Status**: ✅ FULLY IMPLEMENTED - All core functionality is working
 
@@ -24,29 +24,29 @@ Preferred communication style: Simple, everyday language.
 
 ## CLI Command Structure
 The application follows a hierarchical command structure similar to kubectl:
-- Root command: `kkl [command] [subcommand] [flags]`
+- Root command: `kafy [command] [subcommand] [flags]`
 - Main command categories: config, topics, groups
 - Context-aware operations that work across different environments
 
 ## Configuration Management
-- **Config Storage**: Uses YAML configuration files stored in `~/.kkl/config.yml`
+- **Config Storage**: Uses YAML configuration files stored in `~/.kafy/config.yml`
 - **Context System**: Implements a kubectl-like context switching mechanism
 - **Multi-Environment Support**: Manages multiple Kafka clusters (dev, staging, prod) through named contexts
 - **Cluster Configuration**: Stores bootstrap servers and optional Zookeeper endpoints per cluster
 
 ## Command Categories
 
-### Config Management (`kkl config`)
+### Config Management (`kafy config`)
 - Cluster configuration CRUD operations
 - Context switching and management
 - Import/export functionality for configuration portability
 
-### Topic Management (`kkl topics`) 
+### Topic Management (`kafy topics`) 
 - Topic lifecycle operations (list, create, delete, alter)
 - Topic configuration management
 - Partition and replication factor configuration
 
-### Consumer Group Management (`kkl groups`)
+### Consumer Group Management (`kafy groups`)
 - Consumer group monitoring and management
 - Lag analysis and offset management
 - Group reset operations for different offset strategies
@@ -72,23 +72,23 @@ The application follows a hierarchical command structure similar to kubectl:
 ## Build and Usage
 ```bash
 # Build the CLI
-go build -o kkl .
+go build -o kafy .
 
 # Get help
-./kkl --help
+./kafy --help
 
 # Add a cluster configuration
-./kkl config add my-cluster --bootstrap "kafka-server:9092"
+./kafy config add my-cluster --bootstrap "kafka-server:9092"
 
 # List topics
-./kkl topics list
+./kafy topics list
 
 # Create a topic
-./kkl topics create orders --partitions 3 --replication 2
+./kafy topics create orders --partitions 3 --replication 2
 
 # Produce test messages
-./kkl produce orders --count 10
+./kafy produce orders --count 10
 
 # Consume messages
-./kkl consume orders --from-beginning --limit 5
+./kafy consume orders --from-beginning --limit 5
 ```

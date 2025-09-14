@@ -12,10 +12,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "kafka-cli"
+args = "kafy"
 
 [[workflows.workflow]]
-name = "kafka-cli"
+name = "kafy"
 author = "agent"
 
 [[workflows.workflow.tasks]]

@@ -1,4 +1,4 @@
-module kkl
+module kafy
 
 go 1.21
 

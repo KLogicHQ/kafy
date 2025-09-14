@@ -10,7 +10,7 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        kafkaClient "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var produceCmd = &cobra.Command{

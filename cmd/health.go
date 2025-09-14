@@ -4,7 +4,7 @@ import (
         "fmt"
 
         "github.com/spf13/cobra"
-        "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var healthCmd = &cobra.Command{
@@ -64,7 +64,7 @@ func checkBrokers() error {
                 return err
         }
 
-        client, err := kafka.NewClient(cfg)
+        client, err := kafkaClient.NewClient(cfg)
         if err != nil {
                 return err
         }
@@ -132,7 +132,7 @@ func checkTopics() error {
                 return err
         }
 
-        client, err := kafka.NewClient(cfg)
+        client, err := kafkaClient.NewClient(cfg)
         if err != nil {
                 return err
         }
@@ -182,7 +182,7 @@ func checkGroups() error {
                 return err
         }
 
-        client, err := kafka.NewClient(cfg)
+        client, err := kafkaClient.NewClient(cfg)
         if err != nil {
                 return err
         }

@@ -9,7 +9,7 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        kafkaClient "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var cpCmd = &cobra.Command{
@@ -20,11 +20,11 @@ This command will consume messages from the source topic and produce them to the
 preserving keys, values, and headers.
 
 Examples:
-  kkl cp orders orders-backup
-  kkl cp --from-beginning user-events user-events-copy
-  kkl cp --limit 1000 transactions transactions-test
-  kkl cp orders backup --begin-offset 100 --end-offset 500
-  kkl cp events archive --begin-offset 1000`,
+  kafy cp orders orders-backup
+  kafy cp --from-beginning user-events user-events-copy
+  kafy cp --limit 1000 transactions transactions-test
+  kafy cp orders backup --begin-offset 100 --end-offset 500
+  kafy cp events archive --begin-offset 1000`,
         Args:              cobra.ExactArgs(2),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
@@ -46,7 +46,7 @@ Examples:
                 }
 
                 // Generate unique group ID for this copy operation
-                group := fmt.Sprintf("kkl-cp-%d", time.Now().Unix())
+                group := fmt.Sprintf("kafy-cp-%d", time.Now().Unix())
 
                 // Create consumer
                 var offsetReset string

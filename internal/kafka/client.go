@@ -7,7 +7,7 @@ import (
         "time"
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-        "kkl/config"
+        "kafy/config"
 )
 
 type Client struct {

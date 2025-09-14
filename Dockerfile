@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for cross-platform kkl builds
+# Multi-stage Dockerfile for cross-platform kafy builds
 FROM --platform=$BUILDPLATFORM golang:1.21 AS base
 
 # Install build dependencies
@@ -67,9 +67,9 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
         export AR=aarch64-linux-gnu-ar && \
         export STRIP=aarch64-linux-gnu-strip && \
         export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig && \
-        go build -o kkl .; \
+        go build -o kafy .; \
     else \
-        go build -o kkl .; \
+        go build -o kafy .; \
     fi
 
 # Final minimal image
@@ -81,9 +81,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /root/
 
 # Copy the binary from builder stage
-COPY --from=builder /app/kkl .
+COPY --from=builder /app/kafy .
 
 # Copy additional files
 COPY README.md LICENSE ./
 
-ENTRYPOINT ["./kkl"]
+ENTRYPOINT ["./kafy"]

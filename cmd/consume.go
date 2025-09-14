@@ -11,7 +11,7 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        kafkaClient "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var consumeCmd = &cobra.Command{
@@ -45,7 +45,7 @@ var consumeCmd = &cobra.Command{
 
                 // Generate group ID if not provided
                 if group == "" {
-                        group = fmt.Sprintf("kkl-consumer-%d", time.Now().Unix())
+                        group = fmt.Sprintf("kafy-consumer-%d", time.Now().Unix())
                 }
 
                 // Create consumer with appropriate offset configuration

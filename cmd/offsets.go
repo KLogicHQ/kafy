@@ -5,7 +5,7 @@ import (
         "strconv"
 
         "github.com/spf13/cobra"
-        "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var offsetsCmd = &cobra.Command{
@@ -26,7 +26,7 @@ var offsetsShowCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -74,7 +74,7 @@ var offsetsResetCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }

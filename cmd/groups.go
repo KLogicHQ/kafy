@@ -6,7 +6,7 @@ import (
         "strings"
 
         "github.com/spf13/cobra"
-        "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var groupsCmd = &cobra.Command{
@@ -24,7 +24,7 @@ var groupsListCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -63,7 +63,7 @@ var groupsDescribeCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -111,7 +111,7 @@ var groupsLagCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -217,7 +217,7 @@ var groupsDeleteCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }

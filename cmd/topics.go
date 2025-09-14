@@ -9,7 +9,7 @@ import (
 
         "github.com/confluentinc/confluent-kafka-go/v2/kafka"
         "github.com/spf13/cobra"
-        kafkaClient "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var topicsCmd = &cobra.Command{
@@ -561,8 +561,8 @@ This command reads all messages from the source partition and writes them to the
 preserving keys, values, and headers. Optionally, the source partition data can be deleted after successful copy.
 
 Examples:
-  kkl topics move-partition orders --source-partition 0 --dest-partition 3
-  kkl topics move-partition users --source-partition 2 --dest-partition 1 --delete-source`,
+  kafy topics move-partition orders --source-partition 0 --dest-partition 3
+  kafy topics move-partition users --source-partition 2 --dest-partition 1 --delete-source`,
         Args:              cobra.ExactArgs(1),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
@@ -598,7 +598,7 @@ Examples:
                 }
 
                 // Create consumer for reading from source partition
-                groupID := fmt.Sprintf("kkl-move-partition-%d", time.Now().Unix())
+                groupID := fmt.Sprintf("kafy-move-partition-%d", time.Now().Unix())
                 consumer, err := client.CreateConsumerWithOffset(groupID, "earliest")
                 if err != nil {
                         return fmt.Errorf("failed to create consumer: %w", err)
@@ -614,7 +614,7 @@ Examples:
 
                 // Get high watermark for the source partition to determine end point
                 // Use a temporary consumer to query watermarks
-                tempGroupID := fmt.Sprintf("kkl-watermark-query-%d", time.Now().Unix())
+                tempGroupID := fmt.Sprintf("kafy-watermark-query-%d", time.Now().Unix())
                 tempConsumer, err := client.CreateConsumerWithOffset(tempGroupID, "earliest")
                 if err != nil {
                         return fmt.Errorf("failed to create temporary consumer for watermark query: %w", err)

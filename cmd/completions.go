@@ -2,7 +2,7 @@ package cmd
 
 import (
         "fmt"
-        "kkl/internal/kafka"
+        kafkaClient "kafy/internal/kafka"
         
         "github.com/spf13/cobra"
 )
@@ -21,7 +21,7 @@ func completeTopics(cmd *cobra.Command, args []string, toComplete string) ([]str
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
-        client, err := kafka.NewClient(cfg)
+        client, err := kafkaClient.NewClient(cfg)
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
@@ -50,7 +50,7 @@ func completeGroups(cmd *cobra.Command, args []string, toComplete string) ([]str
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
-        client, err := kafka.NewClient(cfg)
+        client, err := kafkaClient.NewClient(cfg)
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
@@ -94,7 +94,7 @@ func completeBrokerIDs(cmd *cobra.Command, args []string, toComplete string) ([]
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }
 
-        client, err := kafka.NewClient(cfg)
+        client, err := kafkaClient.NewClient(cfg)
         if err != nil {
                 return nil, cobra.ShellCompDirectiveNoFileComp
         }

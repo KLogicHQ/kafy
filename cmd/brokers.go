@@ -10,8 +10,8 @@ import (
         "time"
 
         "github.com/spf13/cobra"
-        "kkl/internal/ai"
-        "kkl/internal/kafka"
+        "kafy/internal/ai"
+        kafkaClient "kafy/internal/kafka"
 )
 
 var brokersCmd = &cobra.Command{
@@ -29,7 +29,7 @@ var brokersListCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -72,7 +72,7 @@ var brokersDescribeCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -127,10 +127,10 @@ var brokersMetricsCmd = &cobra.Command{
                 }
 
                 if cluster.BrokerMetricsPort == 0 {
-                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kkl config update <cluster> --broker-metrics-port <port>")
+                        return fmt.Errorf("broker metrics port not configured for current cluster. Use: kafy config update <cluster> --broker-metrics-port <port>")
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -141,7 +141,7 @@ var brokersMetricsCmd = &cobra.Command{
                 }
 
                 // Find the broker
-                var targetBroker *kafka.BrokerInfo
+                var targetBroker *kafkaClient.BrokerInfo
                 for _, broker := range brokers {
                         if broker.ID == int32(brokerID) {
                                 targetBroker = &broker
@@ -393,7 +393,7 @@ var brokersConfigsListCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -430,7 +430,7 @@ var brokersConfigsGetCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }
@@ -482,7 +482,7 @@ var brokersConfigsSetCmd = &cobra.Command{
                         return err
                 }
 
-                client, err := kafka.NewClient(cfg)
+                client, err := kafkaClient.NewClient(cfg)
                 if err != nil {
                         return err
                 }

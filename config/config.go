@@ -34,9 +34,9 @@ type Config struct {
 func DefaultConfigPath() string {
         home, err := os.UserHomeDir()
         if err != nil {
-                return ".kkl/config.yml"
+                return ".kafy/config.yml"
         }
-        return filepath.Join(home, ".kkl", "config.yml")
+        return filepath.Join(home, ".kafy", "config.yml")
 }
 
 func LoadConfig() (*Config, error) {

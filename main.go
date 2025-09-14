@@ -4,7 +4,7 @@ import (
         "fmt"
         "os"
 
-        "kkl/cmd"
+        "kafy/cmd"
 )
 
 func main() {
