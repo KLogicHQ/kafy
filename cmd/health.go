@@ -2,6 +2,7 @@ package cmd
 
 import (
         "fmt"
+        "strings"
 
         "github.com/spf13/cobra"
         kafkaClient "kafy/internal/kafka"
@@ -96,11 +97,13 @@ func checkBrokers() error {
         
         live := 0
         liveBrokers, err := client.ListBrokers()
+        if err != nil {
+                return fmt.Errorf("failed to list live brokers: %w", err)
+        }
+        
         liveSet := make(map[int32]bool)
-        if err == nil {
-                for _, broker := range liveBrokers {
-                        liveSet[broker.ID] = true
-                }
+        for _, broker := range liveBrokers {
+                liveSet[broker.ID] = true
         }
         
         for _, broker := range metadata.Brokers {
@@ -117,6 +120,7 @@ func checkBrokers() error {
         fmt.Printf("Connectivity: %d/%d brokers are live\n", live, len(metadata.Brokers))
         
         // Check if any expected brokers from topics are missing
+        var healthErrors []string
         if len(expectedBrokerIDs) > 0 {
                 fmt.Println("\nTopic Replica Health:")
                 missingBrokers := []int32{}
@@ -131,11 +135,17 @@ func checkBrokers() error {
                 } else {
                         fmt.Printf("  ❌ Missing broker IDs required by topics: %v\n", missingBrokers)
                         fmt.Printf("  ⚠️  This may cause partition unavailability\n")
+                        healthErrors = append(healthErrors, fmt.Sprintf("missing required broker IDs: %v", missingBrokers))
                 }
         }
         
         if live == 0 {
                 return fmt.Errorf("no brokers are reachable")
+        }
+        
+        // Return error if any expected brokers are missing (this makes health check fail)
+        if len(healthErrors) > 0 {
+                return fmt.Errorf("broker health issues detected: %s", strings.Join(healthErrors, "; "))
         }
 
         return nil
@@ -145,21 +155,21 @@ func checkBrokers() error {
 func getExpectedBrokerIDsFromTopics(client *kafkaClient.Client) (map[int32]bool, error) {
         brokerIDs := make(map[int32]bool)
         
-        topics, err := client.ListTopics()
+        // Get cluster metadata for all topics in one call for efficiency
+        adminClient, err := client.CreateAdminClient()
         if err != nil {
-                return nil, fmt.Errorf("failed to list topics: %w", err)
+                return nil, fmt.Errorf("failed to create admin client: %w", err)
+        }
+        defer adminClient.Close()
+
+        metadata, err := adminClient.GetMetadata(nil, false, 5*1000)
+        if err != nil {
+                return nil, fmt.Errorf("failed to get cluster metadata: %w", err)
         }
         
-        // For each topic, get its partition metadata and collect broker IDs from replicas
-        for _, topic := range topics {
-                topicDetails, err := client.DescribeTopic(topic.Name)
-                if err != nil {
-                        // Skip topics we can't describe, continue with others
-                        continue
-                }
-                
-                // Extract broker IDs from all partition replicas
-                for _, partition := range topicDetails.PartitionDetails {
+        // Extract broker IDs from all partition replicas across all topics
+        for _, topic := range metadata.Topics {
+                for _, partition := range topic.Partitions {
                         for _, replicaID := range partition.Replicas {
                                 brokerIDs[replicaID] = true
                         }

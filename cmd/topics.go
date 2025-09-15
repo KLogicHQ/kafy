@@ -104,7 +104,7 @@ var topicsDescribeCmd = &cobra.Command{
                         // Display detailed partition information
                         if len(topic.PartitionDetails) > 0 {
                                 fmt.Println("\nPartition Details:")
-                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas", "IN SYNC", "Disk Size"}
+                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas", "IN SYNC", "Disk Size (Est.)"}
                                 var partRows [][]string
                                 
                                 for _, partition := range topic.PartitionDetails {

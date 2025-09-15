@@ -225,50 +225,23 @@ func (c *Client) DescribeTopic(topicName string) (*TopicInfo, error) {
         return topicInfo, nil
 }
 
-// getPartitionSizes retrieves the disk size of each partition for a given topic
+// getPartitionSizes retrieves the estimated disk size of each partition for a given topic
 func (c *Client) getPartitionSizes(topicName string, partitions []PartitionInfo) ([]int64, error) {
-        adminClient, err := c.CreateAdminClient()
+        // Create one consumer for all partition queries to improve efficiency
+        consumer, err := c.CreateConsumerWithOffset("", "latest")
         if err != nil {
                 return nil, err
         }
-        defer adminClient.Close()
-
-        // Get the cluster metadata to find brokers
-        metadata, err := adminClient.GetMetadata(nil, false, 5*1000)
-        if err != nil {
-                return nil, err
-        }
+        defer consumer.Close()
 
         // Create a map to store sizes for each partition
         sizes := make([]int64, len(partitions))
         
-        // For each partition, query the log size from the leader broker
+        // For each partition, query the watermark offsets
         for i, partition := range partitions {
-                // Find the leader broker for this partition
-                var leaderBroker *kafka.BrokerMetadata
-                for _, broker := range metadata.Brokers {
-                        if broker.ID == partition.Leader {
-                                leaderBroker = &broker
-                                break
-                        }
-                }
-                
-                if leaderBroker == nil {
-                        // If leader is not available, set size to 0
-                        sizes[i] = 0
-                        continue
-                }
-                
-                // Use QueryWatermarkOffsets to get high watermark, which gives us an indication of size
-                // This is an approximation since we can't directly get disk size without JMX
-                consumer, err := c.CreateConsumerWithOffset("", "latest")
-                if err != nil {
-                        sizes[i] = 0
-                        continue
-                }
-                
+                // Use QueryWatermarkOffsets to get high watermark for size estimation
+                // This is a rough approximation since we can't directly get disk size without JMX
                 low, high, err := consumer.QueryWatermarkOffsets(topicName, partition.ID, 5*1000)
-                consumer.Close()
                 
                 if err != nil {
                         sizes[i] = 0
