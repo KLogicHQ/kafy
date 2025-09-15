@@ -267,10 +267,7 @@ func (c *Client) getPartitionSizes(topicName string, partitions []PartitionInfo)
                         continue
                 }
                 
-                low, high, err := consumer.QueryWatermarkOffsets(kafka.TopicPartition{
-                        Topic:     &topicName,
-                        Partition: partition.ID,
-                }, 5*1000)
+                low, high, err := consumer.QueryWatermarkOffsets(topicName, partition.ID, 5*1000)
                 consumer.Close()
                 
                 if err != nil {

@@ -86,6 +86,11 @@ var topicsDescribeCmd = &cobra.Command{
                                 {"Replicas", strconv.Itoa(topic.Replicas)},
                         }
                         
+                        // Add total disk size if available
+                        if topic.TotalDiskSize > 0 {
+                                rows = append(rows, []string{"Total Disk Size", formatBytes(topic.TotalDiskSize)})
+                        }
+                        
                         // Add config entries if any
                         if len(topic.Config) > 0 {
                                 rows = append(rows, []string{"Configs", ""})
@@ -99,7 +104,7 @@ var topicsDescribeCmd = &cobra.Command{
                         // Display detailed partition information
                         if len(topic.PartitionDetails) > 0 {
                                 fmt.Println("\nPartition Details:")
-                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas", "IN SYNC"}
+                                partHeaders := []string{"Partition", "Leader", "Replicas", "In-Sync Replicas", "IN SYNC", "Disk Size"}
                                 var partRows [][]string
                                 
                                 for _, partition := range topic.PartitionDetails {
@@ -146,6 +151,7 @@ var topicsDescribeCmd = &cobra.Command{
                                                 strings.Join(replicas, ","),
                                                 strings.Join(isr, ","),
                                                 inSync,
+                                                formatBytes(partition.DiskSize),
                                         })
                                 }
                                 
@@ -714,6 +720,31 @@ Examples:
                 fmt.Printf("NOTE: Original data in source partition %d remains untouched for safety.\n", sourcePartition)
                 return nil
         },
+}
+
+// formatBytes converts bytes to human-readable format
+func formatBytes(bytes int64) string {
+        if bytes == 0 {
+                return "0 B"
+        }
+        
+        const unit = 1024
+        if bytes < unit {
+                return fmt.Sprintf("%d B", bytes)
+        }
+        
+        div, exp := int64(unit), 0
+        for n := bytes / unit; n >= unit; n /= unit {
+                div *= unit
+                exp++
+        }
+        
+        suffixes := []string{"KB", "MB", "GB", "TB", "PB"}
+        if exp < len(suffixes) {
+                return fmt.Sprintf("%.1f %s", float64(bytes)/float64(div), suffixes[exp])
+        }
+        
+        return fmt.Sprintf("%.1f %s", float64(bytes)/float64(div), "EB")
 }
 
 func init() {
