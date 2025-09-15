@@ -87,19 +87,24 @@ func checkBrokers() error {
 
         fmt.Printf("Found %d broker(s) in cluster metadata:\n", len(metadata.Brokers))
         
+        // Get list of all broker IDs that are expected from topic replicas
+        expectedBrokerIDs, err := getExpectedBrokerIDsFromTopics(client)
+        if err != nil {
+                fmt.Printf("Warning: Could not determine expected brokers from topics: %v\n", err)
+                expectedBrokerIDs = make(map[int32]bool) // Empty set, fallback to all brokers from metadata
+        }
+        
         live := 0
-        for _, broker := range metadata.Brokers {
-                // Try to get additional broker information to test connectivity
-                liveBrokers, err := client.ListBrokers()
-                brokerLive := false
-                if err == nil {
-                        for _, liveBroker := range liveBrokers {
-                                if liveBroker.ID == broker.ID {
-                                        brokerLive = true
-                                        break
-                                }
-                        }
+        liveBrokers, err := client.ListBrokers()
+        liveSet := make(map[int32]bool)
+        if err == nil {
+                for _, broker := range liveBrokers {
+                        liveSet[broker.ID] = true
                 }
+        }
+        
+        for _, broker := range metadata.Brokers {
+                brokerLive := liveSet[broker.ID]
                 
                 if brokerLive {
                         fmt.Printf("  ✅ Broker %d (%s:%d) - Live\n", broker.ID, broker.Host, broker.Port)
@@ -111,11 +116,57 @@ func checkBrokers() error {
 
         fmt.Printf("Connectivity: %d/%d brokers are live\n", live, len(metadata.Brokers))
         
+        // Check if any expected brokers from topics are missing
+        if len(expectedBrokerIDs) > 0 {
+                fmt.Println("\nTopic Replica Health:")
+                missingBrokers := []int32{}
+                for brokerID := range expectedBrokerIDs {
+                        if !liveSet[brokerID] {
+                                missingBrokers = append(missingBrokers, brokerID)
+                        }
+                }
+                
+                if len(missingBrokers) == 0 {
+                        fmt.Printf("  ✅ All brokers required by topic replicas are healthy (%d brokers)\n", len(expectedBrokerIDs))
+                } else {
+                        fmt.Printf("  ❌ Missing broker IDs required by topics: %v\n", missingBrokers)
+                        fmt.Printf("  ⚠️  This may cause partition unavailability\n")
+                }
+        }
+        
         if live == 0 {
                 return fmt.Errorf("no brokers are reachable")
         }
 
         return nil
+}
+
+// getExpectedBrokerIDsFromTopics extracts all broker IDs from topic replica arrays
+func getExpectedBrokerIDsFromTopics(client *kafkaClient.Client) (map[int32]bool, error) {
+        brokerIDs := make(map[int32]bool)
+        
+        topics, err := client.ListTopics()
+        if err != nil {
+                return nil, fmt.Errorf("failed to list topics: %w", err)
+        }
+        
+        // For each topic, get its partition metadata and collect broker IDs from replicas
+        for _, topic := range topics {
+                topicDetails, err := client.DescribeTopic(topic.Name)
+                if err != nil {
+                        // Skip topics we can't describe, continue with others
+                        continue
+                }
+                
+                // Extract broker IDs from all partition replicas
+                for _, partition := range topicDetails.PartitionDetails {
+                        for _, replicaID := range partition.Replicas {
+                                brokerIDs[replicaID] = true
+                        }
+                }
+        }
+        
+        return brokerIDs, nil
 }
 
 var healthTopicsCmd = &cobra.Command{
