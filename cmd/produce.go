@@ -24,6 +24,7 @@ var produceCmd = &cobra.Command{
                 file, _ := cmd.Flags().GetString("file")
                 format, _ := cmd.Flags().GetString("format")
                 count, _ := cmd.Flags().GetInt("count")
+                size, _ := cmd.Flags().GetInt("size")
                 
                 cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
@@ -56,7 +57,7 @@ var produceCmd = &cobra.Command{
                 }()
 
                 if count > 0 {
-                        return produceTestMessages(producer, topicName, key, count)
+                        return produceTestMessages(producer, topicName, key, count, size)
                 }
 
                 if file != "" {
@@ -67,10 +68,18 @@ var produceCmd = &cobra.Command{
         },
 }
 
-func produceTestMessages(producer *kafka.Producer, topic, key string, count int) error {
+func produceTestMessages(producer *kafka.Producer, topic, key string, count int, size int) error {
         for i := 0; i < count; i++ {
-                message := fmt.Sprintf(`{"id": %d, "message": "test message %d", "timestamp": "%s"}`, 
-                        i, i, time.Now().Format(time.RFC3339))
+                var message string
+                
+                if size > 0 {
+                        // Generate message of specific size
+                        message = generateMessageOfSize(i, size)
+                } else {
+                        // Default message format
+                        message = fmt.Sprintf(`{"id": %d, "message": "test message %d", "timestamp": "%s"}`, 
+                                i, i, time.Now().Format(time.RFC3339))
+                }
                 
                 messageKey := key
                 if messageKey == "" {
@@ -90,8 +99,46 @@ func produceTestMessages(producer *kafka.Producer, topic, key string, count int)
 
         // Wait for all messages to be delivered
         producer.Flush(15 * 1000)
-        fmt.Printf("Produced %d test messages\n", count)
+        if size > 0 {
+                fmt.Printf("Produced %d test messages of %d bytes each\n", count, size)
+        } else {
+                fmt.Printf("Produced %d test messages\n", count)
+        }
         return nil
+}
+
+func generateMessageOfSize(id int, targetSize int) string {
+        // Start with basic JSON structure
+        baseMessage := fmt.Sprintf(`{"id": %d, "timestamp": "%s", "data": "`, 
+                id, time.Now().Format(time.RFC3339))
+        suffix := `"}`
+        
+        // Calculate how much padding we need
+        currentSize := len(baseMessage) + len(suffix)
+        if currentSize >= targetSize {
+                // If base message is already too big, truncate timestamp and use minimal structure
+                minMessage := fmt.Sprintf(`{"id":%d,"data":"`, id)
+                minSuffix := `"}`
+                minSize := len(minMessage) + len(minSuffix)
+                
+                if minSize >= targetSize {
+                        // If even minimal structure is too big, just return what fits
+                        if targetSize < 10 {
+                                return strings.Repeat("x", targetSize)
+                        }
+                        return minMessage[:targetSize-len(minSuffix)] + minSuffix
+                }
+                
+                paddingNeeded := targetSize - minSize
+                padding := strings.Repeat("x", paddingNeeded)
+                return minMessage + padding + minSuffix
+        }
+        
+        // Generate padding to reach target size
+        paddingNeeded := targetSize - currentSize
+        padding := strings.Repeat("x", paddingNeeded)
+        
+        return baseMessage + padding + suffix
 }
 
 func produceFromFile(producer *kafka.Producer, topic, key, filename, format string) error {
@@ -214,4 +261,5 @@ func init() {
         produceCmd.Flags().String("file", "", "Produce messages from file")
         produceCmd.Flags().String("format", "text", "Message format (text, json, yaml)")
         produceCmd.Flags().Int("count", 0, "Send random test messages")
+        produceCmd.Flags().Int("size", 0, "Size in bytes for each generated test message (used with --count)")
 }
