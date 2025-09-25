@@ -25,7 +25,14 @@ var produceCmd = &cobra.Command{
                 format, _ := cmd.Flags().GetString("format")
                 count, _ := cmd.Flags().GetInt("count")
                 size, _ := cmd.Flags().GetInt("size")
-                
+                headerStrings, _ := cmd.Flags().GetStringSlice("header")
+
+                // Parse headers from command line flags
+                headers, err := parseHeaders(headerStrings)
+                if err != nil {
+                        return fmt.Errorf("invalid header format: %w", err)
+                }
+
                 cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
                         return err
@@ -57,18 +64,57 @@ var produceCmd = &cobra.Command{
                 }()
 
                 if count > 0 {
-                        return produceTestMessages(producer, topicName, key, count, size)
+                        return produceTestMessages(producer, topicName, key, headers, count, size)
                 }
 
                 if file != "" {
-                        return produceFromFile(producer, topicName, key, file, format)
+                        return produceFromFile(producer, topicName, key, headers, file, format)
                 }
 
-                return produceInteractive(producer, topicName, key, format)
+                return produceInteractive(producer, topicName, key, headers, format)
         },
 }
 
-func produceTestMessages(producer *kafka.Producer, topic, key string, count int, size int) error {
+// parseHeaders parses header strings in the format "key:value" or "key=value"
+func parseHeaders(headerStrings []string) ([]kafka.Header, error) {
+        if len(headerStrings) == 0 {
+                return nil, nil
+        }
+
+        headers := make([]kafka.Header, len(headerStrings))
+        for i, headerStr := range headerStrings {
+                // Support both "key:value" and "key=value" formats
+                var key, value string
+                if strings.Contains(headerStr, ":") {
+                        parts := strings.SplitN(headerStr, ":", 2)
+                        if len(parts) != 2 {
+                                return nil, fmt.Errorf("header '%s' must be in format 'key:value' or 'key=value'", headerStr)
+                        }
+                        key, value = strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+                } else if strings.Contains(headerStr, "=") {
+                        parts := strings.SplitN(headerStr, "=", 2)
+                        if len(parts) != 2 {
+                                return nil, fmt.Errorf("header '%s' must be in format 'key:value' or 'key=value'", headerStr)
+                        }
+                        key, value = strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+                } else {
+                        return nil, fmt.Errorf("header '%s' must be in format 'key:value' or 'key=value'", headerStr)
+                }
+
+                if key == "" {
+                        return nil, fmt.Errorf("header key cannot be empty in '%s'", headerStr)
+                }
+
+                headers[i] = kafka.Header{
+                        Key:   key,
+                        Value: []byte(value),
+                }
+        }
+
+        return headers, nil
+}
+
+func produceTestMessages(producer *kafka.Producer, topic, key string, headers []kafka.Header, count int, size int) error {
         for i := 0; i < count; i++ {
                 var message string
                 
@@ -90,6 +136,7 @@ func produceTestMessages(producer *kafka.Producer, topic, key string, count int,
                         TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
                         Key:            []byte(messageKey),
                         Value:          []byte(message),
+                        Headers:        headers,
                 }, nil)
                 
                 if err != nil {
@@ -141,7 +188,7 @@ func generateMessageOfSize(id int, targetSize int) string {
         return baseMessage + padding + suffix
 }
 
-func produceFromFile(producer *kafka.Producer, topic, key, filename, format string) error {
+func produceFromFile(producer *kafka.Producer, topic, key string, headers []kafka.Header, filename, format string) error {
         file, err := os.Open(filename)
         if err != nil {
                 return fmt.Errorf("failed to open file: %w", err)
@@ -183,6 +230,7 @@ func produceFromFile(producer *kafka.Producer, topic, key, filename, format stri
                         TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
                         Key:            []byte(messageKey),
                         Value:          messageValue,
+                        Headers:        headers,
                 }, nil)
                 
                 if err != nil {
@@ -202,7 +250,7 @@ func produceFromFile(producer *kafka.Producer, topic, key, filename, format stri
         return nil
 }
 
-func produceInteractive(producer *kafka.Producer, topic, key, format string) error {
+func produceInteractive(producer *kafka.Producer, topic, key string, headers []kafka.Header, format string) error {
         fmt.Printf("Producing messages to topic '%s'. Type messages and press Enter. Ctrl+C to exit.\n", topic)
         
         scanner := bufio.NewScanner(os.Stdin)
@@ -236,6 +284,7 @@ func produceInteractive(producer *kafka.Producer, topic, key, format string) err
                         TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
                         Key:            []byte(messageKey),
                         Value:          messageValue,
+                        Headers:        headers,
                 }, nil)
                 
                 if err != nil {
@@ -258,6 +307,7 @@ func produceInteractive(producer *kafka.Producer, topic, key, format string) err
 
 func init() {
         produceCmd.Flags().String("key", "", "Message key")
+        produceCmd.Flags().StringSlice("header", []string{}, "Message headers in format 'key:value' or 'key=value' (can be specified multiple times)")
         produceCmd.Flags().String("file", "", "Produce messages from file")
         produceCmd.Flags().String("format", "text", "Message format (text, json, yaml)")
         produceCmd.Flags().Int("count", 0, "Send random test messages")

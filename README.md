@@ -207,6 +207,12 @@ kafy produce orders --count 10
 
 # Produce with a specific key
 kafy produce orders --key "customer-123"
+
+# Produce with message headers
+kafy produce orders --header "Content-Type:application/json" --header "User-ID=12345"
+
+# Combine key and headers
+kafy produce orders --key "customer-123" --header "Content-Type:application/json" --header "Source=api"
 ```
 
 ### 4. Consume Messages
@@ -292,6 +298,7 @@ kafy tail orders users events
 | `kafy produce <topic> --file <path>` | Produce from file | `kafy produce orders --file data.json` |
 | `kafy produce <topic> --count <n>` | Generate test messages | `kafy produce orders --count 100` |
 | `kafy produce <topic> --key <key>` | Produce with specific key | `kafy produce orders --key user-123` |
+| `kafy produce <topic> --header <key:value>` | Produce with message headers | `kafy produce orders --header "Content-Type:application/json" --header "User-ID=123"` |
 | `kafy consume <topic1> [topic2] ...` | Consume from one or more topics | `kafy consume orders users --limit 50` |
 | `kafy consume <topic> --from-beginning` | Consume from start | `kafy consume orders --from-beginning` |
 | `kafy consume <topic> --from-latest` | Consume from latest messages | `kafy consume orders --from-latest` |

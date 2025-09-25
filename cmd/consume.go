@@ -136,15 +136,22 @@ var consumeCmd = &cobra.Command{
 func printMessage(msg *kafka.Message, outputFormat string) error {
         switch outputFormat {
         case "json":
+                // Convert headers to map
+                headers := make(map[string]string)
+                for _, header := range msg.Headers {
+                        headers[header.Key] = string(header.Value)
+                }
+
                 msgData := map[string]interface{}{
                         "topic":     *msg.TopicPartition.Topic,
                         "partition": msg.TopicPartition.Partition,
                         "offset":    msg.TopicPartition.Offset,
                         "key":       string(msg.Key),
+                        "headers":   headers,
                         "value":     string(msg.Value),
                         "timestamp": msg.Timestamp,
                 }
-                
+
                 encoder := json.NewEncoder(os.Stdout)
                 return encoder.Encode(msgData)
                 
@@ -155,6 +162,12 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                 fmt.Printf("partition: %d\n", msg.TopicPartition.Partition)
                 fmt.Printf("offset: %d\n", msg.TopicPartition.Offset)
                 fmt.Printf("key: %s\n", string(msg.Key))
+                if len(msg.Headers) > 0 {
+                        fmt.Printf("headers:\n")
+                        for _, header := range msg.Headers {
+                                fmt.Printf("  %s: %s\n", header.Key, string(header.Value))
+                        }
+                }
                 fmt.Printf("value: %s\n", string(msg.Value))
                 fmt.Printf("timestamp: %s\n", msg.Timestamp.Format(time.RFC3339))
                 
@@ -172,7 +185,14 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                 } else {
                         fmt.Printf("Key: <null>\n")
                 }
-                
+
+                if len(msg.Headers) > 0 {
+                        fmt.Printf("Headers:\n")
+                        for _, header := range msg.Headers {
+                                fmt.Printf("  %s: %s\n", header.Key, string(header.Value))
+                        }
+                }
+
                 if len(msg.Value) > 0 {
                         fmt.Printf("Value (hex):\n")
                         printHexDump(msg.Value)
@@ -182,12 +202,22 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                 fmt.Printf("\n")
                 
         default: // table format
-                fmt.Printf("[%s] Topic: %s, Partition: %d, Offset: %d, Key: %s, Value: %s\n",
+                headerStr := ""
+                if len(msg.Headers) > 0 {
+                        headerPairs := make([]string, 0, len(msg.Headers))
+                        for _, header := range msg.Headers {
+                                headerPairs = append(headerPairs, fmt.Sprintf("%s=%s", header.Key, string(header.Value)))
+                        }
+                        headerStr = fmt.Sprintf(", Headers: {%s}", strings.Join(headerPairs, ", "))
+                }
+
+                fmt.Printf("[%s] Topic: %s, Partition: %d, Offset: %d, Key: %s%s, Value: %s\n",
                         msg.Timestamp.Format("15:04:05"),
                         *msg.TopicPartition.Topic,
                         msg.TopicPartition.Partition,
                         msg.TopicPartition.Offset,
                         string(msg.Key),
+                        headerStr,
                         string(msg.Value))
         }
         
