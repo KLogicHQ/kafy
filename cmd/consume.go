@@ -15,9 +15,9 @@ import (
 )
 
 var consumeCmd = &cobra.Command{
-        Use:   "consume <topic1> [topic2] [topic3] ...",
-        Short: "Consume messages from one or more topics",
-        Args:  cobra.MinimumNArgs(1),
+        Use:          "consume <topic1> [topic2] [topic3] ...",
+        Short:        "Consume messages from one or more topics",
+        Args:         cobra.MinimumNArgs(1),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicNames := args

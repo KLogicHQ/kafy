@@ -14,9 +14,9 @@ import (
 )
 
 var produceCmd = &cobra.Command{
-        Use:   "produce <topic>",
-        Short: "Produce messages to a topic",
-        Args:  cobra.ExactArgs(1),
+        Use:          "produce <topic>",
+        Short:        "Produce messages to a topic",
+        Args:         cobra.ExactArgs(1),
         ValidArgsFunction: completeTopics,
         RunE: func(cmd *cobra.Command, args []string) error {
                 topicName := args[0]

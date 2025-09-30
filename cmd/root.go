@@ -3,13 +3,14 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"kafy/internal/output"
 
 	"github.com/spf13/cobra"
 )
 
-const version = "0.0.6"
+const version = "0.0.7"
 
 var (
 	outputFormat    string
@@ -52,12 +53,24 @@ producers, consumers, and cluster administration.
 		//   $ kafy tail orders
 		//   $ kafy groups list
 		//   $ kafy brokers list`,
-		SilenceUsage: true,
 	}
 )
 
 func Execute() error {
+	// Walk through all commands and wrap their RunE functions
+	wrapAllCommands(rootCmd)
 	return rootCmd.Execute()
+}
+
+// wrapAllCommands recursively wraps all RunE functions in the command tree
+func wrapAllCommands(cmd *cobra.Command) {
+	if cmd.RunE != nil {
+		originalRunE := cmd.RunE
+		cmd.RunE = wrapRunE(originalRunE)
+	}
+	for _, subCmd := range cmd.Commands() {
+		wrapAllCommands(subCmd)
+	}
 }
 
 func init() {
@@ -95,5 +108,34 @@ func handleError(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+// isUsageError checks if an error is related to command usage (args/flags) vs operational errors
+func isUsageError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := err.Error()
+	return strings.Contains(errMsg, "arg(s)") ||
+		strings.Contains(errMsg, "unknown command") ||
+		strings.Contains(errMsg, "unknown flag") ||
+		strings.Contains(errMsg, "invalid argument") ||
+		strings.Contains(errMsg, "requires at least") ||
+		strings.Contains(errMsg, "accepts") ||
+		strings.Contains(errMsg, "required flag") ||
+		strings.Contains(errMsg, "flag needs")
+}
+
+// wrapRunE wraps a command's RunE to intelligently handle SilenceUsage
+// For operational errors, it silences usage. For argument errors, usage is shown.
+func wrapRunE(runE func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		err := runE(cmd, args)
+		if err != nil && !isUsageError(err) {
+			// For operational errors, silence usage
+			cmd.SilenceUsage = true
+		}
+		return err
 	}
 }

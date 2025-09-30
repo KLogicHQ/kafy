@@ -56,7 +56,7 @@ var offsetsShowCmd = &cobra.Command{
 
 var offsetsResetCmd = &cobra.Command{
         Use:   "reset <topic>",
-        Short: "Reset all partitions to earliest",  
+        Short: "Reset all partitions to earliest",
         Long:  "Reset offsets per partition. Use --to-earliest, --to-latest, or --to-timestamp",
         Args:  cobra.ExactArgs(1),
         RunE: func(cmd *cobra.Command, args []string) error {

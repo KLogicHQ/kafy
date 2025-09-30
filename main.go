@@ -1,7 +1,6 @@
 package main
 
 import (
-        "fmt"
         "os"
 
         "kafy/cmd"
@@ -9,7 +8,8 @@ import (
 
 func main() {
         if err := cmd.Execute(); err != nil {
-                fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+                // Error is already printed by cobra with usage/help
+                // Just exit with error code
                 os.Exit(1)
         }
 }
