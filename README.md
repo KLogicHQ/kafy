@@ -48,6 +48,14 @@ A comprehensive Kafka productivity CLI tool that simplifies Kafka operations wit
    kafy --help
    ```
 
+### Mac OS X users
+
+The binary cannot be executed as is. You need to flag the binary as safe to execute using the following command.
+
+```shell
+xattr -dr com.apple.quarantine kafy
+```
+
 ### Build from Source
 
 **For developers and contributors** - Build from source code:
@@ -656,13 +664,13 @@ The broker metrics command supports optional AI analysis to provide intelligent 
    ```bash
    # For OpenAI (default)
    export OPENAI_API_KEY="your-openai-api-key"
-   
+
    # For Claude
    export ANTHROPIC_API_KEY="your-anthropic-api-key"
-   
+
    # For Grok
    export XAI_API_KEY="your-xai-api-key"
-   
+
    # For Gemini
    export GOOGLE_API_KEY="your-google-api-key"
    ```
@@ -671,10 +679,10 @@ The broker metrics command supports optional AI analysis to provide intelligent 
    ```bash
    # Basic AI analysis with OpenAI (uses gpt-4o by default)
    kafy brokers metrics 1 --analyze
-   
+
    # Use specific AI provider with default model
    kafy brokers metrics 1 --analyze --provider claude
-   
+
    # Use specific AI provider with custom model
    kafy brokers metrics 1 --analyze --provider openai --model gpt-4o-mini
    kafy brokers metrics 1 --analyze --provider claude --model claude-3-haiku-20240307
@@ -685,14 +693,14 @@ The broker metrics command supports optional AI analysis to provide intelligent 
 
 The AI analysis provides structured insights:
 - **📊 Summary**: Overall health assessment
-- **⚠️ Issues Identified**: Performance problems and bottlenecks  
+- **⚠️ Issues Identified**: Performance problems and bottlenecks
 - **🔍 Root Cause Analysis**: Explanations of what's causing issues
 - **💡 Recommendations**: Specific, actionable solutions
 
 Example output:
 ```
 ================================================================================
-🤖 AI ANALYSIS & RECOMMENDATIONS  
+🤖 AI ANALYSIS & RECOMMENDATIONS
 ================================================================================
 🔄 Analyzing metrics with OPENAI...
 
