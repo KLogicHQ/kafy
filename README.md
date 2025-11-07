@@ -194,6 +194,9 @@ kafy topics describe orders
 # Delete a topic (with confirmation)
 kafy topics delete test-topic
 
+# Change partition count for a topic
+kafy topics set-partitions orders --partitions 10
+
 # Manage topic configurations
 kafy topics configs list      # List configs for ALL topics
 kafy topics configs get orders # Get configs for specific topic
@@ -276,7 +279,8 @@ kafy tail orders users events
 | `kafy topics partitions [topic]` | Show partition details with insync status | `kafy topics partitions orders` or `kafy topics partitions` |
 | `kafy topics create <topic>` | Create new topic | `kafy topics create events --partitions 6 --replication 3` |
 | `kafy topics delete <topic>` | Delete topic | `kafy topics delete test-topic --force` |
-| `kafy topics alter <topic>` | Modify topic settings | `kafy topics alter orders --partitions 10` |
+| `kafy topics alter <topic>` | Modify topic settings (legacy) | `kafy topics alter orders --partitions 10` |
+| `kafy topics set-partitions <topic>` | Change partition count for topic | `kafy topics set-partitions orders --partitions 10` |
 | `kafy topics move-partition <topic>` | Move data between partitions | `kafy topics move-partition orders --source-partition 0 --dest-partition 3` |
 
 ### Topic Configuration Commands
@@ -471,6 +475,9 @@ kafy produce test-events --count 100
 
 # Monitor partition health and sync status
 kafy topics partitions test-events
+
+# Scale up partitions if needed
+kafy topics set-partitions test-events --partitions 5
 
 # Monitor the data
 kafy consume test-events --from-beginning --limit 10

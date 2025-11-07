@@ -559,6 +559,68 @@ var topicsConfigsDeleteCmd = &cobra.Command{
         },
 }
 
+var topicsSetPartitionsCmd = &cobra.Command{
+        Use:   "set-partitions <topic>",
+        Short: "Change the number of partitions for a topic",
+        Long: `Change the partition count for an existing topic.
+
+Note: Kafka only supports increasing partition count, not decreasing.
+Reducing partitions is not supported due to data loss risks.
+
+Examples:
+  kafy topics set-partitions my-topic --partitions 10
+  kafy topics set-partitions orders --partitions 5`,
+        Args:              cobra.ExactArgs(1),
+        ValidArgsFunction: completeTopics,
+        RunE: func(cmd *cobra.Command, args []string) error {
+                topicName := args[0]
+                partitions, _ := cmd.Flags().GetInt("partitions")
+
+                if partitions <= 0 {
+                        return fmt.Errorf("partitions must be greater than 0")
+                }
+
+                cfg, err := LoadConfigWithClusterOverride()
+                if err != nil {
+                        return err
+                }
+
+                client, err := kafkaClient.NewClient(cfg)
+                if err != nil {
+                        return err
+                }
+
+                // Get current topic details to show before/after
+                topic, err := client.DescribeTopic(topicName)
+                if err != nil {
+                        return fmt.Errorf("failed to describe topic: %w", err)
+                }
+
+                currentPartitions := topic.Partitions
+
+                // Validate partition count change
+                if partitions == currentPartitions {
+                        fmt.Printf("Topic '%s' already has %d partitions. No change needed.\n", topicName, partitions)
+                        return nil
+                }
+
+                if partitions < currentPartitions {
+                        return fmt.Errorf("cannot decrease partition count from %d to %d. Kafka does not support reducing partitions due to data loss risks", currentPartitions, partitions)
+                }
+
+                // Update partitions
+                if err := client.AlterTopicPartitions(topicName, partitions); err != nil {
+                        return fmt.Errorf("failed to update partitions: %w", err)
+                }
+
+                fmt.Printf("Topic '%s' partition count updated successfully:\n", topicName)
+                fmt.Printf("  Previous: %d partitions\n", currentPartitions)
+                fmt.Printf("  Current:  %d partitions\n", partitions)
+                fmt.Printf("  Added:    %d new partitions\n", partitions-currentPartitions)
+                return nil
+        },
+}
+
 var topicsMovePartitionCmd = &cobra.Command{
         Use:   "move-partition <topic>",
         Short: "Move data from one partition to another partition within the same topic",
@@ -753,6 +815,7 @@ func init() {
         topicsCmd.AddCommand(topicsCreateCmd)
         topicsCmd.AddCommand(topicsDeleteCmd)
         topicsCmd.AddCommand(topicsAlterCmd)
+        topicsCmd.AddCommand(topicsSetPartitionsCmd)
         topicsCmd.AddCommand(topicsPartitionsCmd)
         topicsCmd.AddCommand(topicsConfigsCmd)
         topicsCmd.AddCommand(topicsMovePartitionCmd)
@@ -761,6 +824,7 @@ func init() {
         topicsDescribeCmd.ValidArgsFunction = completeTopics
         topicsDeleteCmd.ValidArgsFunction = completeTopics
         topicsAlterCmd.ValidArgsFunction = completeTopics
+        topicsSetPartitionsCmd.ValidArgsFunction = completeTopics
         topicsPartitionsCmd.ValidArgsFunction = completeTopics
         topicsConfigsGetCmd.ValidArgsFunction = completeTopics
         topicsConfigsSetCmd.ValidArgsFunction = completeTopics
@@ -781,7 +845,11 @@ func init() {
         topicsCreateCmd.Flags().Int("replication", 1, "Replication factor")
         topicsDeleteCmd.Flags().Bool("force", false, "Skip confirmation")
         topicsAlterCmd.Flags().Int("partitions", 0, "New number of partitions")
-        
+
+        // Set partitions flags
+        topicsSetPartitionsCmd.Flags().Int("partitions", 0, "New number of partitions")
+        topicsSetPartitionsCmd.MarkFlagRequired("partitions")
+
         // Move partition flags
         topicsMovePartitionCmd.Flags().Int32("source-partition", -1, "Source partition number to move data from")
         topicsMovePartitionCmd.Flags().Int32("dest-partition", -1, "Destination partition number to move data to")
