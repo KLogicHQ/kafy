@@ -252,6 +252,10 @@ kafy tail orders
 
 # Tail multiple topics simultaneously
 kafy tail orders users events
+
+# Hide message values (show only metadata)
+kafy consume orders --no-value
+kafy tail orders --no-value
 ```
 
 ## 📖 Complete Command Reference
@@ -315,7 +319,9 @@ kafy tail orders users events
 | `kafy consume <topic> --from-beginning` | Consume from start | `kafy consume orders --from-beginning` |
 | `kafy consume <topic> --from-latest` | Consume from latest messages | `kafy consume orders --from-latest` |
 | `kafy consume <topic> --group <group>` | Consume with group | `kafy consume orders --group my-app` |
+| `kafy consume <topic> --no-value` | Hide message values from output | `kafy consume orders --no-value` |
 | `kafy tail <topic1> [topic2] ...` | Tail messages in real-time | `kafy tail orders users events` |
+| `kafy tail <topic> --no-value` | Tail without showing values | `kafy tail orders --no-value` |
 | `kafy cp <source> <dest>` | Copy messages between topics | `kafy cp orders orders-backup --limit 1000` |
 | `kafy cp <source> <dest> --begin-offset <n>` | Copy from specific offset | `kafy cp orders backup --begin-offset 100` |
 | `kafy cp <source> <dest> --begin-offset <n> --end-offset <n>` | Copy offset range | `kafy cp orders backup --begin-offset 100 --end-offset 500` |

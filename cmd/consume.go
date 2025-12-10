@@ -27,7 +27,8 @@ var consumeCmd = &cobra.Command{
                 limit, _ := cmd.Flags().GetInt("limit")
                 output, _ := cmd.Flags().GetString("output")
                 keyFilter, _ := cmd.Flags().GetString("key-filter")
-                
+                noValue, _ := cmd.Flags().GetBool("no-value")
+
                 // Validate conflicting flags
                 if fromBeginning && fromLatest {
                         return fmt.Errorf("cannot use both --from-beginning and --from-latest flags")
@@ -118,7 +119,7 @@ var consumeCmd = &cobra.Command{
                                                 }
                                         }
                                         
-                                        if err := printMessage(msg, output); err != nil {
+                                        if err := printMessage(msg, output, noValue); err != nil {
                                                 fmt.Printf("Error formatting message: %v\n", err)
                                         }
                                         
@@ -133,7 +134,7 @@ var consumeCmd = &cobra.Command{
         },
 }
 
-func printMessage(msg *kafka.Message, outputFormat string) error {
+func printMessage(msg *kafka.Message, outputFormat string, hideValue bool) error {
         switch outputFormat {
         case "json":
                 // Convert headers to map
@@ -148,8 +149,10 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                         "offset":    msg.TopicPartition.Offset,
                         "key":       string(msg.Key),
                         "headers":   headers,
-                        "value":     string(msg.Value),
                         "timestamp": msg.Timestamp,
+                }
+                if !hideValue {
+                        msgData["value"] = string(msg.Value)
                 }
 
                 encoder := json.NewEncoder(os.Stdout)
@@ -168,7 +171,9 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                                 fmt.Printf("  %s: %s\n", header.Key, string(header.Value))
                         }
                 }
-                fmt.Printf("value: %s\n", string(msg.Value))
+                if !hideValue {
+                        fmt.Printf("value: %s\n", string(msg.Value))
+                }
                 fmt.Printf("timestamp: %s\n", msg.Timestamp.Format(time.RFC3339))
                 
         case "hex":
@@ -193,11 +198,13 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                         }
                 }
 
-                if len(msg.Value) > 0 {
-                        fmt.Printf("Value (hex):\n")
-                        printHexDump(msg.Value)
-                } else {
-                        fmt.Printf("Value: <null>\n")
+                if !hideValue {
+                        if len(msg.Value) > 0 {
+                                fmt.Printf("Value (hex):\n")
+                                printHexDump(msg.Value)
+                        } else {
+                                fmt.Printf("Value: <null>\n")
+                        }
                 }
                 fmt.Printf("\n")
                 
@@ -211,14 +218,24 @@ func printMessage(msg *kafka.Message, outputFormat string) error {
                         headerStr = fmt.Sprintf(", Headers: {%s}", strings.Join(headerPairs, ", "))
                 }
 
-                fmt.Printf("[%s] Topic: %s, Partition: %d, Offset: %d, Key: %s%s, Value: %s\n",
-                        msg.Timestamp.Format("15:04:05"),
-                        *msg.TopicPartition.Topic,
-                        msg.TopicPartition.Partition,
-                        msg.TopicPartition.Offset,
-                        string(msg.Key),
-                        headerStr,
-                        string(msg.Value))
+                if hideValue {
+                        fmt.Printf("[%s] Topic: %s, Partition: %d, Offset: %d, Key: %s%s\n",
+                                msg.Timestamp.Format("15:04:05"),
+                                *msg.TopicPartition.Topic,
+                                msg.TopicPartition.Partition,
+                                msg.TopicPartition.Offset,
+                                string(msg.Key),
+                                headerStr)
+                } else {
+                        fmt.Printf("[%s] Topic: %s, Partition: %d, Offset: %d, Key: %s%s, Value: %s\n",
+                                msg.Timestamp.Format("15:04:05"),
+                                *msg.TopicPartition.Topic,
+                                msg.TopicPartition.Partition,
+                                msg.TopicPartition.Offset,
+                                string(msg.Key),
+                                headerStr,
+                                string(msg.Value))
+                }
         }
         
         return nil
@@ -301,4 +318,5 @@ func init() {
         consumeCmd.Flags().Int("limit", 0, "Limit number of messages (0 = unlimited)")
         consumeCmd.Flags().String("output", "table", "Output format (table, json, yaml, hex)")
         consumeCmd.Flags().String("key-filter", "", "Filter messages by key (supports wildcards: *, prefix*, *suffix, *contains*)")
+        consumeCmd.Flags().Bool("no-value", false, "Hide message values from output")
 }

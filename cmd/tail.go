@@ -22,7 +22,8 @@ var tailCmd = &cobra.Command{
                 topicNames := args
                 output, _ := cmd.Flags().GetString("output")
                 keyFilter, _ := cmd.Flags().GetString("key-filter")
-                
+                noValue, _ := cmd.Flags().GetBool("no-value")
+
                 // Execute consume with --from-latest flag
                 cfg, err := LoadConfigWithClusterOverride()
                 if err != nil {
@@ -93,7 +94,7 @@ var tailCmd = &cobra.Command{
                                 }
                                 
                                 // Use the same message printing function as consume command
-                                if err := printMessage(msg, output); err != nil {
+                                if err := printMessage(msg, output, noValue); err != nil {
                                         fmt.Printf("Error formatting message: %v\n", err)
                                 }
                         }
@@ -104,4 +105,5 @@ var tailCmd = &cobra.Command{
 func init() {
         tailCmd.Flags().String("output", "table", "Output format (table, json, yaml, hex)")
         tailCmd.Flags().String("key-filter", "", "Filter messages by key (supports wildcards: *, prefix*, *suffix, *contains*)")
+        tailCmd.Flags().Bool("no-value", false, "Hide message values from output")
 }
